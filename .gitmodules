@@ -1,0 +1,3 @@
+[submodule "delta/lib/forge-std"]
+	path = delta/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
