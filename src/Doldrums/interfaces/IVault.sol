@@ -20,5 +20,5 @@ interface IVault {
     ) external;
 
     event PositionRequested(address indexed receiver, uint256 amount, uint256 minAmountOut, uint256 deadline, bool isShort);
-    event PositionExecuted(bool indexed success, bool isShort, address indexed receiver, uint256 excutedAmountOut, uint256 orginAmountIn, uint256 remainAmount, uint256 excutedPrice, uint256 feeAmount);
+    event PositionExecuted(bool indexed success, bool isShort, address indexed receiver, uint256 excutedAmountOut, uint256 orginAmountIn, uint256 remainAmount, uint256 excutedPrice, uint256 excutedFee);
 }

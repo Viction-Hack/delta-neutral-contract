@@ -12,7 +12,7 @@ contract Vault is Ownable, ReentrancyGuard, IVault {
     address public controller;
     address public underlying;
     address public perpDex;
-    uint256 public collateralBalance;
+    uint256 public mintedDUSDCAmount;
 
     constructor(address _controller, address _perpDex, address _underyling) Ownable(msg.sender) {
         controller = _controller;
@@ -46,6 +46,7 @@ contract Vault is Ownable, ReentrancyGuard, IVault {
         uint256 minCollateralAmountOut,
         uint256 deadline
     ) external onlyController {
+        require(dusdAmountIn <= mintedDUSDCAmount, "Vault: dusdAmountIn exceed mintedDUSDCAmount");
         _placePerpOrder(
             receiver,
             dusdAmountIn,
@@ -75,7 +76,7 @@ contract Vault is Ownable, ReentrancyGuard, IVault {
         emit PositionRequested(receiver, amountIn, minAmountOut, deadline, isShort);
     }
 
-    function _receivePerpOrder(
+    function receivePerpOrder(
         bool success,
         bool isShort,
         address receiver,
@@ -83,26 +84,29 @@ contract Vault is Ownable, ReentrancyGuard, IVault {
         uint256 orginAmountIn,
         uint256 remainAmount,
         uint256 excutedPrice,
-        uint256 feeAmount
-    ) external {
+        uint256 excutedFee
+    ) external payable{
         require (msg.sender == perpDex, "Vault: not perpDex");
         if (isShort) { // mint
             if(success){
-                collateralBalance += orginAmountIn-remainAmount;
+                mintedDUSDCAmount += excutedAmountOut;
             }
             IController(controller)._mintAfterVault(success, receiver, orginAmountIn, excutedAmountOut, remainAmount);
         } else { // redeem
             if(success){
-                collateralBalance -= excutedAmountOut;
+                mintedDUSDCAmount -= (orginAmountIn - remainAmount);
                 if(underlying == address(0)) {
                     payable(receiver).transfer(excutedAmountOut);
                 } else {
-                    IERC20(underlying).transfer(receiver, excutedAmountOut);
+                    // *Must need to approve, receive collateral from perpDex and transfer to receiver 
+                    IERC20(underlying).transferFrom(perpDex, receiver, excutedAmountOut);
                 }
             }
             IController(controller)._redeemAfterVault(success, receiver, orginAmountIn, excutedAmountOut, remainAmount);
         }
-        emit PositionExecuted(success, isShort, receiver, excutedAmountOut, orginAmountIn, remainAmount, excutedPrice, feeAmount);
+        emit PositionExecuted(success, isShort, receiver, excutedAmountOut, orginAmountIn, remainAmount, excutedPrice, excutedFee);
     }
+
+
 }
 
