@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
-pragma solidity 0.8.17;
+pragma solidity ^0.8.20;
 
 /**
  * @dev Interface of the VRC25 standard as defined in the EIP.

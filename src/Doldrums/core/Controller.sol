@@ -1,169 +1,154 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.20;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IController} from "../interfaces/IController.sol";
+import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {DUSD} from "../dusd/DUSD.sol";
+import {IVault} from "../interfaces/IVault.sol";
 
-contract Controller is Ownable {
+contract Controller is IController, Ownable, ReentrancyGuard {
+
+    DUSD public dusd;
+
+    address public constant vic = address(0);
+    mapping(address => address) private underlyingToVault; // underlying => vault
+    mapping(address => address) private valutToUnderlying; // vault => underlying
+
+    constructor(address _dusd) Ownable(msg.sender) {
+        dusd = DUSD(_dusd);
+    }
+
+    function registerVault(address underlying, address vault) external onlyOwner {
+        underlyingToVault[underlying] = vault;
+        valutToUnderlying[vault] = underlying;
+    }
 
     function mint(
-        address assetToken,
-        uint256 assetAmount,
-        uint256 minAmountOut,
-        address receiver
-    ) external nonReentrant returns (uint256) {
+        address underlying,
+        address receiver,
+        uint256 collateralAmountIn,
+        uint256 minDUSDCAmountOut,
+        uint256 deadline
+    ) external nonReentrant {
         // 1. check that token is approved
         // 2. get clearing house from router
         // 3. transfer tokens from msg.sender to clearing house
         // 4. execute perp tx
         // 6. mint
-        IERC20Upgradeable collateral = IERC20Upgradeable(assetToken);
+        IERC20 collateral = IERC20(underlying);
         address account = msg.sender;
-        if(collateral.allowance(account, address(this)) < assetAmount) {
-            revert CtrlNotApproved(assetToken, account, assetAmount);
+        if(collateral.allowance(account, address(this)) < collateralAmountIn) {
+            revert NotApproved(underlying, account, collateralAmountIn);
         }
 
-        address depository = router.findDepositoryForDeposit(assetToken, assetAmount);
-        collateral.safeTransferFrom(
+        address vault = underlyingToVault[underlying];
+        collateral.transferFrom(
             account,
-            depository,
-            assetAmount
+            vault,
+            collateralAmountIn
         );
 
-        InternalMintParams memory mintParams = InternalMintParams({
-            assetToken: assetToken,
-            assetAmount: assetAmount,
-            minAmountOut: minAmountOut,
-            receiver: receiver,
-            depository: depository
-        });
-        return _mint(mintParams);
+        _mint(vault, receiver, collateralAmountIn, minDUSDCAmountOut, deadline);
     }
 
-    /// @notice Mints UXD with ETH as collateral.
-    /// @dev Contract wraps ETH to WETH and deposits WETH in DEX vault
-    function mintWithEth(uint256 minAmountOut, address receiver)
+    function mintWithVic(address receiver, uint256 minDUSDCAmountOut, uint256 deadline)
         external
         payable
         nonReentrant
-        returns (uint256)
     {
-        uint256 amount = msg.value;
-        address collateral = weth;
-        address depository = router.findDepositoryForDeposit(collateral, amount);
+        address vault = underlyingToVault[vic];
 
-        // Deposit ETH with WETH contract and mint WETH
-        IWETH9(weth).deposit{value: amount}();
-        IERC20Upgradeable(weth).safeTransfer(depository, amount);
-        InternalMintParams memory mintParams = InternalMintParams({
-            assetToken: collateral,
-            assetAmount: msg.value,
-            minAmountOut: minAmountOut,
-            receiver: receiver,
-            depository: depository
-        });
-        return _mint(mintParams);
+        payable(vault).transfer(msg.value);
+
+        _mint(vault, receiver, msg.value, minDUSDCAmountOut, deadline);
     }
 
     /// @dev internal mint function
-    function _mint(InternalMintParams memory mintParams)
+    function _mint(
+        address vault,
+        address receiver,
+        uint256 collateralAmountIn,
+        uint256 minDUSDCAmountOut,
+        uint256 deadline
+    )
         internal
-        returns (uint256)
     {
-        if (!whitelistedAssets[mintParams.assetToken]) {
-            revert CtrlNotWhitelisted(mintParams.assetToken);
-        }
-        uint256 amountOut = IDepository(mintParams.depository).deposit(
-            mintParams.assetToken, 
-            mintParams.assetAmount
+        IVault(vault).deposit(
+            receiver,
+            collateralAmountIn,
+            minDUSDCAmountOut,
+            deadline
         );
+    }
 
-        if (amountOut < mintParams.minAmountOut) {
-            revert CtrlMinNotMet(mintParams.minAmountOut, amountOut);
+    function _mintAfterVault(
+        bool success, 
+        address receiver, 
+        uint256 collateralAmountIn, 
+        uint256 excutedDUSDCAmountOut, 
+        uint256 remainAmount) 
+    external {
+        address underlying = valutToUnderlying[msg.sender];
+        require(underlying != address(0), "Controller: msg.sender is not a registered vault");
+
+        if(!success) {
+            IERC20(underlying).transfer(receiver, collateralAmountIn);
+            emit MintFailed(receiver, collateralAmountIn);
+            return;
         }
-        redeemable.mint(mintParams.receiver, amountOut);
-        emit Minted(msg.sender, mintParams.receiver, amountOut);
+        if(remainAmount > 0) {
+            IERC20(underlying).transfer(receiver, remainAmount);
+        }
 
-        return amountOut;
+        dusd.mint(receiver, excutedDUSDCAmountOut);
+        emit Minted(receiver, collateralAmountIn, excutedDUSDCAmountOut, remainAmount);
     }
 
-    /// @notice Redeems a given amount of redeemable token.
-    /// @param assetToken the token to receive by redeeming.
-    /// @param redeemAmount The amount to redeemable token being redeemed.
-    /// @param minAmountOut The min amount of `assetToken` to receive.
-    /// @param receiver The account to receive assets
     function redeem(
-        address assetToken,
-        uint256 redeemAmount,
-        uint256 minAmountOut,
-        address receiver
-    ) external nonReentrant returns (uint256) {
-        InternalRedeemParams memory rp = InternalRedeemParams({
-            assetToken: assetToken,
-            amountToRedeem: redeemAmount,
-            minAmountOut: minAmountOut,
-            intermediary: receiver
-        });
-        uint256 amountOut = _redeem(rp);
-        emit Redeemed(msg.sender, receiver, amountOut);
-        return amountOut;
-    }
+        address underlying,
+        address receiver,
+        uint256 dusdAmountIn,
+        uint256 minCollateralAmountOut,
+        uint256 deadline
+    ) external nonReentrant {
 
-    function redeemForEth(
-        uint256 redeemAmount,
-        uint256 minAmonuntOut,
-        address payable receiver
-    ) external nonReentrant returns (uint256) {
-        // 1. redeem WETH to controller
-        // 2. unwrap ETH
-        // 3. Transfer ETH to user
-
-        InternalRedeemParams memory rp = InternalRedeemParams({
-            assetToken: weth,
-            amountToRedeem: redeemAmount,
-            minAmountOut: minAmonuntOut,
-            intermediary: address(this)
-        });
-
-        uint256 amountOut = _redeem(rp);
-
-        // withdraw ETH from WETH contract by burning WETH.
-        // ETH is withdrawn to the caller (this contract), and can then be sent to the msg.sender
-        // from this contract.
-        IWETH9(weth).withdraw(amountOut);
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success,) = receiver.call{value: amountOut}("");
-        require(success, "ETH transfer failed");
-
-        emit Redeemed(msg.sender, receiver, amountOut);
-        return amountOut;
-    }
-
-    /// @dev internal redeem function
-    function _redeem(InternalRedeemParams memory redeemParams)
-        internal
-        returns (uint256)
-    {
-        if(redeemable.allowance(msg.sender, address(this)) < redeemParams.amountToRedeem) {
-            revert CtrlNotApproved(address(redeemable), msg.sender, redeemParams.amountToRedeem);
+        if(dusd.allowance(msg.sender, address(this)) < dusdAmountIn) {
+            revert NotApproved(address(dusd), msg.sender, dusdAmountIn);
         }
         
-        address depository = router.findDepositoryForRedeem(
-            redeemParams.assetToken,
-            redeemParams.amountToRedeem
+        address vault = underlyingToVault[underlying];
+
+        IVault(vault).redeem(
+            receiver,
+            dusdAmountIn,
+            minCollateralAmountOut,
+            deadline
         );
 
-        uint256 amountOut = IDepository(depository).redeem(
-            redeemParams.assetToken, 
-            redeemParams.amountToRedeem
-        );
-
-        if (amountOut < redeemParams.minAmountOut) {
-            revert CtrlMinNotMet(redeemParams.minAmountOut, amountOut);
-        }
-        redeemable.burn(msg.sender, redeemParams.amountToRedeem);
-        IERC20Upgradeable(redeemParams.assetToken).safeTransfer(redeemParams.intermediary, amountOut);
-
-        return amountOut;
     }
 
+    function _redeemAfterVault(
+        bool success, 
+        address receiver, 
+        uint256 dusdAmountIn, 
+        uint256 excutedCollateralAmountOut, 
+        uint256 remainAmount) 
+    external {
+        address underlying = valutToUnderlying[msg.sender];
+        require(underlying != address(0), "Controller: msg.sender is not a registered vault");
+
+        if(!success) {
+            dusd.transfer(receiver, dusdAmountIn);
+            emit RedeemFailed(receiver, dusdAmountIn);
+            return;
+        }
+        if(remainAmount > 0) {
+            dusd.transfer(receiver, remainAmount);
+        }
+
+        dusd.burn(receiver, dusdAmountIn - remainAmount);
+        emit Redeemed(receiver, dusdAmountIn - remainAmount, excutedCollateralAmountOut, remainAmount);
+    }
 }

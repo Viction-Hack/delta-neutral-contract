@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.20;
 
 import "./VRC25.sol";
 
@@ -45,33 +45,25 @@ abstract contract VRC25Gas is VRC25 {
     }
 
     function transfer(address recipient, uint256 amount) external override gasCalc returns (bool) {
-        uint256 fee = estimateFee(amount);
         _transfer(msg.sender, recipient, amount);
-        _chargeFeeFrom(msg.sender, recipient, fee);
         return true;
     }
 
     function approve(address spender, uint256 amount) external override gasCalc returns (bool) {
-        uint256 fee = estimateFee(0);
         _approve(msg.sender, spender, amount);
-        _chargeFeeFrom(msg.sender, address(this), fee);
         return true;
     }
 
     function transferFrom(address sender, address recipient, uint256 amount) virtual external override gasCalc returns (bool) {
-        uint256 fee = estimateFee(amount);
-        require(_allowances[sender][msg.sender] >= amount.add(fee), "VRC25: amount exeeds allowance");
+        require(_allowances[sender][msg.sender] >= amount, "VRC25: amount exeeds allowance");
 
-        _allowances[sender][msg.sender] = _allowances[sender][msg.sender].sub(amount).sub(fee);
+        _allowances[sender][msg.sender] = _allowances[sender][msg.sender].sub(amount);
         _transfer(sender, recipient, amount);
-        _chargeFeeFrom(sender, recipient, fee);
         return true;
     }
 
     function burn(uint256 amount) external override gasCalc returns (bool) {
-        uint256 fee = estimateFee(0);
         _burn(msg.sender, amount);
-        _chargeFeeFrom(msg.sender, address(this), fee);
         return true;
     }
 

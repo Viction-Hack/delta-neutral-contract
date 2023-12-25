@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.20;
 
 import "./interfaces/IVRC25.sol";
 import "./interfaces/IERC165.sol";
@@ -308,7 +308,7 @@ abstract contract VRC25 is IVRC25, IERC165 {
      * @param from The account that token amount will be deducted.
      * @param amount The amount that will be burned.
      */
-    function _burn(address from, uint256 amount) internal {
+    function _burn(address from, uint256 amount) internal virtual {
         require(from != address(0), "VRC25: burn from the zero address");
         require(amount <= _balances[from], "VRC25: insuffient balance");
         _totalSupply = _totalSupply.sub(amount);
