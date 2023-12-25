@@ -6,9 +6,9 @@ import "./VRC25.sol";
 abstract contract VRC25Gas is VRC25 {
     using SafeMath for uint256;
 
-    uint256 private constant BASE_GAS = 49686; // base gas for gas calculation and transfer
-    uint256 private constant EXTRA_GAS_FOR_FIRST_TIME = 15000 + 80; // Extra gas for first-time transfer
-    uint256 private constant GAS_REFUND_FOR_EMPTYING_BALANCE = 15000 - 80; // Gas refund for emptying balance
+    uint256 private constant BASE_GAS = 50000; // base gas for gas calculation and transfer
+    uint256 private constant EXTRA_GAS_FOR_FIRST_TIME = 15000; // Extra gas for first-time transfer
+    uint256 private constant GAS_REFUND_FOR_EMPTYING_BALANCE = 15000; // Gas refund for emptying balance
 
     event GasFee(address indexed from, address indexed to, uint256 fee);
 
