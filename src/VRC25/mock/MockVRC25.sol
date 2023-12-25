@@ -5,12 +5,12 @@ pragma solidity 0.8.17;
 import "../libraries/ECDSA.sol";
 import "../libraries/EIP712.sol";
 
-import "../VRC25.sol";
+import "../VRC25Gas.sol";
 
-contract MockVRC25 is VRC25, EIP712 {
+contract MockVRC25 is VRC25Gas, EIP712 {
     using Address for address;
 
-    constructor(string memory name, string memory symbol, uint8 decimal) VRC25(name,symbol,decimal) EIP712("VRC25", "1") {
+    constructor(string memory name, string memory symbol, uint8 decimal) VRC25Gas(name,symbol,decimal) EIP712("VRC25", "1") {
     }
 
     /**
@@ -18,7 +18,7 @@ contract MockVRC25 is VRC25, EIP712 {
      * @param value Amount of fee
      */
     function _estimateFee(uint256 value) internal view override returns (uint256) {
-        return value + minFee();
+        return minFee();
     }
 
     function supportsInterface(bytes4 interfaceId) public view override returns (bool) {

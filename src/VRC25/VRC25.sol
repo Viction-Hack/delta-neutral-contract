@@ -18,10 +18,10 @@ abstract contract VRC25 is IVRC25, IERC165 {
     // The order of _balances, _minFeem, _issuer must not be changed to pass validation of gas sponsor application
     mapping (address => uint256) private _balances;
     uint256 private _minFee;
-    address private _owner;
+    address internal _owner;
     address private _newOwner;
 
-    mapping (address => mapping (address => uint256)) private _allowances;
+    mapping (address => mapping (address => uint256)) internal _allowances;
 
     string private _name;
     string private _symbol;
@@ -135,7 +135,7 @@ abstract contract VRC25 is IVRC25, IERC165 {
      *
      * Emits a {Transfer} event.
      */
-    function transfer(address recipient, uint256 amount) external override returns (bool) {
+    function transfer(address recipient, uint256 amount) virtual external override returns (bool) {
         uint256 fee = estimateFee(amount);
         _transfer(msg.sender, recipient, amount);
         _chargeFeeFrom(msg.sender, recipient, fee);
@@ -156,7 +156,7 @@ abstract contract VRC25 is IVRC25, IERC165 {
      *
      * Emits an {Approval} event.
      */
-    function approve(address spender, uint256 amount) external override returns (bool) {
+    function approve(address spender, uint256 amount) virtual external override returns (bool) {
         uint256 fee = estimateFee(0);
         _approve(msg.sender, spender, amount);
         _chargeFeeFrom(msg.sender, address(this), fee);
@@ -172,7 +172,7 @@ abstract contract VRC25 is IVRC25, IERC165 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(address sender, address recipient, uint256 amount) external override returns (bool) {
+    function transferFrom(address sender, address recipient, uint256 amount) virtual external override returns (bool) {
         uint256 fee = estimateFee(amount);
         require(_allowances[sender][msg.sender] >= amount.add(fee), "VRC25: amount exeeds allowance");
 
@@ -185,7 +185,7 @@ abstract contract VRC25 is IVRC25, IERC165 {
     /**
      * @notice Remove `amount` tokens owned by caller from circulation.
      */
-    function burn(uint256 amount) external returns (bool) {
+    function burn(uint256 amount) virtual external returns (bool) {
         uint256 fee = estimateFee(0);
         _burn(msg.sender, amount);
         _chargeFeeFrom(msg.sender, address(this), fee);
