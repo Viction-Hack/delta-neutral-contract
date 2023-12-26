@@ -7,7 +7,7 @@ import "../../src/Doldrums/perpdex/MockPerpDex.sol";
 import {Vault} from "../../src/Doldrums/vault/Vault.sol";
 import {Controller} from "../../src/Doldrums/core/Controller.sol";
 
-contract MockPerpDexTest is Test, Fixture {
+contract UnitTest is Test, Fixture {
     Controller controller;
     MockPerpDex mockPerpDex;
     DUSD dusd;
@@ -29,9 +29,9 @@ contract MockPerpDexTest is Test, Fixture {
         dusd = new DUSD(address(controller),lzEndpoint);
         dai = new MOCKOFTV2("DAI","DAI",8,lzEndpoint);
         weth = new MOCKOFTV2("WETH","WETH",8,lzEndpoint);
-        vicVault = new Vault(address(controller),address(mockPerpDex),address(wvic));
-        daiVault = new Vault(address(controller),address(mockPerpDex),address(dai));
-        wethVault = new Vault(address(controller),address(mockPerpDex),address(weth));
+        vicVault = new Vault(address(controller),gateway,address(wvic));
+        daiVault = new Vault(address(controller),gateway,address(dai));
+        wethVault = new Vault(address(controller),gateway,address(weth));
         controller.setDUSD(address(dusd));
         controller.registerVault(address(wvic), address(vicVault));
         controller.registerVault(address(dai), address(daiVault));
@@ -40,6 +40,9 @@ contract MockPerpDexTest is Test, Fixture {
         receiver = address(this);
 
         mockPerpDex.changeOraclePrice(address(vault), 3000); // 1000 USD로 설정
+        mockPerpDex.changeOraclePrice(address(vicVault), 8 * 10 ** 7); // 0.8 USD로 설정
+        mockPerpDex.changeOraclePrice(address(daiVault), 10 ** 8); // 1 USD로 설정
+        mockPerpDex.changeOraclePrice(address(wethVault), 2000 * 10 ** 8); // 3 USD로 설정
     }
 
     function testOpenPosition() public {
