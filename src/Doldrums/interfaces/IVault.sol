@@ -10,7 +10,7 @@ interface IVault {
         uint256 collateralAmountIn,
         uint256 minDUSDCAmountOut,
         uint256 deadline
-    ) payable external;
+    ) external;
 
     function redeem(
         address receiver,

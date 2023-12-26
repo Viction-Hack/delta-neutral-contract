@@ -4,19 +4,21 @@ pragma solidity ^0.8.20;
 import {IController} from "../interfaces/IController.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {DUSD} from "../dusd/DUSD.sol";
+import {INativeOFTV2} from "../interfaces/INativeOFTV2.sol";
 import {IVault} from "../interfaces/IVault.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 contract Controller is IController, Ownable, ReentrancyGuard {
 
     DUSD public dusd;
 
-    address public constant vic = address(0);
+    address public vic;
     mapping(address => address) private underlyingToVault; // underlying => vault
     mapping(address => address) private valutToUnderlying; // vault => underlying
 
-    constructor() Ownable(msg.sender) {
+    constructor(address _vic) Ownable(msg.sender) {
+        vic = _vic;
     }
 
     function setDUSD(address _dusd) external onlyOwner {
@@ -53,13 +55,13 @@ contract Controller is IController, Ownable, ReentrancyGuard {
             collateralAmountIn
         );
 
-        // _mint(vault, receiver, collateralAmountIn, minDUSDCAmountOut, deadline);
-        IVault(vault).deposit(
-            receiver,
-            collateralAmountIn,
-            minDUSDCAmountOut,
-            deadline
-        );
+        _mint(vault, receiver, collateralAmountIn, minDUSDCAmountOut, deadline);
+        // IVault(vault).deposit(
+        //     receiver,
+        //     collateralAmountIn,
+        //     minDUSDCAmountOut,
+        //     deadline
+        // );
     }
 
     function mintWithVic(address receiver, uint256 minDUSDCAmountOut, uint256 deadline)
@@ -69,13 +71,28 @@ contract Controller is IController, Ownable, ReentrancyGuard {
     {
         address vault = underlyingToVault[vic];
 
-        // payable(vault).transfer(msg.value);
+        // payable(vault).transfer(msg.value);    
+        INativeOFTV2(vic).deposit{value: msg.value}();
+        IERC20(vic).transfer(vault, msg.value);    
+        _mint(vault, receiver, msg.value, minDUSDCAmountOut, deadline);
+        // IVault(vault).deposit{value: msg.value}(
+        //     receiver,
+        //     msg.value,
+        //     minDUSDCAmountOut,
+        //     deadline
+        // );
+    }
 
-
-        // _mint(vault, receiver, msg.value, minDUSDCAmountOut, deadline);
-        IVault(vault).deposit{value: msg.value}(
+    function _mint(
+        address vault,
+        address receiver,
+        uint256 collateralAmountIn,
+        uint256 minDUSDCAmountOut,
+        uint256 deadline
+    ) internal {
+        IVault(vault).deposit(
             receiver,
-            msg.value,
+            collateralAmountIn,
             minDUSDCAmountOut,
             deadline
         );
@@ -144,6 +161,12 @@ contract Controller is IController, Ownable, ReentrancyGuard {
         }
         if(remainAmount > 0) {
             dusd.transfer(receiver, remainAmount);
+        }
+        if(underlying == vic) {
+            INativeOFTV2(vic).withdraw(excutedCollateralAmountOut);
+            payable(receiver).transfer(excutedCollateralAmountOut);
+        } else {
+            IERC20(underlying).transfer(receiver, excutedCollateralAmountOut);
         }
 
         dusd.burn(receiver, dusdAmountIn - remainAmount);

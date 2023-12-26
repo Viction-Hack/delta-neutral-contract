@@ -30,7 +30,7 @@ contract Vault is Ownable, ReentrancyGuard, IVault {
         uint256 collateralAmountIn,
         uint256 minDUSDCAmountOut,
         uint256 deadline
-    ) external payable onlyController {
+    ) external onlyController {
         _placePerpOrder(
             receiver,
             collateralAmountIn,
@@ -95,12 +95,13 @@ contract Vault is Ownable, ReentrancyGuard, IVault {
         } else { // redeem
             if(success){
                 mintedDUSDCAmount -= (orginAmountIn - remainAmount);
-                if(underlying == address(0)) {
-                    payable(receiver).transfer(excutedAmountOut);
-                } else {
-                    // *Must need to approve, receive collateral from perpDex and transfer to receiver 
-                    IERC20(underlying).transferFrom(perpDex, receiver, excutedAmountOut);
-                }
+                // if(underlying == address(0)) {
+                //     payable(receiver).transfer(excutedAmountOut);
+                // } else {
+                //     // *Must need to approve, receive collateral from perpDex and transfer to receiver 
+                //     IERC20(underlying).transferFrom(perpDex, receiver, excutedAmountOut);
+                // }
+                IERC20(underlying).transferFrom(perpDex, controller, excutedAmountOut);
             }
             IController(controller)._redeemAfterVault(success, receiver, orginAmountIn, excutedAmountOut, remainAmount);
         }
