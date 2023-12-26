@@ -60,9 +60,9 @@ contract MockPerpDex {
             position.entryPrice = uint256(newTotalValue / position.amount);
         }
 
-        Vault(vault).receivePerpOrder(
-            success, isShort, receiver, executedAmountOut, amount, remainingAmount, executedPrice, executedFee
-        );
+        // Vault(vault).receivePerpOrder(
+        //     success, isShort, receiver, executedAmountOut, amount, remainingAmount, executedPrice, executedFee
+        // );
     }
 
     /**
