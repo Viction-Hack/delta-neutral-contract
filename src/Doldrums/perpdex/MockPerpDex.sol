@@ -14,7 +14,7 @@ contract MockPerpDex {
     }
 
     mapping(address => Position) positions; // Mapping of positions
-    uint256 public price = 3000; // Price of the asset in USD
+    mapping(address => uint256) public priceOracle; // Vault Address => Price of the asset in USD
 
     /**
      * @dev Simulates opening a position on a perpetual dex and then calls the receivePerpOrder function on the Vault.
@@ -35,6 +35,7 @@ contract MockPerpDex {
     ) external {
         // Check if the deadline has passed
         bool success = deadline > block.timestamp;
+        uint256 price = priceOracle[vault];
 
         // Calculate the executed amounts
         uint256 executedAmountOut = amount * price * 98 / 100; // 2% slippage
@@ -72,10 +73,11 @@ contract MockPerpDex {
 
     /**
      * @dev Changes the oracle price to the specified value.
+     * @param vault Address of the vault to change the price of.
      * @param newPrice The new price to be set.
      */
-    function changeOraclePrice(uint256 newPrice) external {
-        price = newPrice;
+    function changeOraclePrice(address vault, uint256 newPrice) external {
+        priceOracle[vault] = newPrice;
     }
 
     /**
