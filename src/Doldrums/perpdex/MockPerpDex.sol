@@ -49,21 +49,15 @@ contract MockPerpDex {
 
         if (success) {
             Position storage position = positions[receiver];
-            uint256 totalValue = amount * price;
-
-            if (position.amount != 0) {
-                uint256 newTotalValue = (uint256(int256(position.entryPrice) * position.amount) + totalValue)
-                    / (uint256(int256(position.amount) + int256(amount)));
-                position.entryPrice = newTotalValue;
-            } else {
-                position.entryPrice = price;
-            }
+            int256 newTotalValue = int256(amount * price) + int256(position.entryPrice) * position.amount;
 
             if (isShort) {
                 position.amount -= int256(amount);
             } else {
                 position.amount += int256(amount);
             }
+
+            position.entryPrice = uint256(newTotalValue / position.amount);
         }
 
         Vault(vault).receivePerpOrder(
