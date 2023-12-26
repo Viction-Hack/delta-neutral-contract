@@ -18,7 +18,6 @@ abstract contract VRC25Gas is VRC25 {
     modifier gasCalc {
         uint256 gasBefore = gasleft();
         _;
-        address _owner = owner();
         uint256 oraclePrice = 1;
         uint256 gasConsumed = gasBefore - gasleft();
         uint256 extraGas = estimateTransferGas(_owner,(gasConsumed + BASE_GAS) * tx.gasprice); 

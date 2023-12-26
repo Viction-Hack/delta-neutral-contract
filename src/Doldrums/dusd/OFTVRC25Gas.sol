@@ -15,10 +15,22 @@ abstract contract OFTVRC25Gas is BaseOFTV2Alias.BaseOFTV2, VRC25Gas {
         string memory _symbol,
         uint8 _sharedDecimals,
         address _lzEndpoint
-    ) VRC25Gas(_name,_symbol,_sharedDecimals) BaseOFTV2Alias.BaseOFTV2(_sharedDecimals, _lzEndpoint) {
+    ) VRC25Gas(_name,_symbol,_sharedDecimals) BaseOFTV2Alias.BaseOFTV2(_sharedDecimals, _lzEndpoint) BaseOFTV2Alias.Ownable(msg.sender) {
         uint8 decimals = decimals();
         require(_sharedDecimals <= decimals, "OFT: sharedDecimals must be <= decimals");
         ld2sdRate = 10**(decimals - _sharedDecimals);
+    }
+
+    /************************************************************************
+     * VRC25Gas overrides
+     ************************************************************************/
+
+    function owner() public view virtual override(BaseOFTV2Alias.Ownable, VRC25) returns (address) {
+        return BaseOFTV2Alias.Ownable.owner();
+    }
+
+    function transferOwnership(address newOwner) public virtual override(BaseOFTV2Alias.Ownable, VRC25) onlyOwner {
+        BaseOFTV2Alias.Ownable.transferOwnership(newOwner);
     }
 
     function supportsInterface(bytes4 interfaceId) public view override(BaseOFTV2Alias.BaseOFTV2, VRC25) returns (bool) {

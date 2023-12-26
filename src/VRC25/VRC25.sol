@@ -7,19 +7,18 @@ import "./interfaces/IERC165.sol";
 import "./libraries/Address.sol";
 import "./libraries/SafeMath.sol";
 
-import "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
-
 /**
  * @title Base VRC25 implementation
  * @notice VRC25 implementation for opt-in to gas sponsor program. This replace Ownable from OpenZeppelin as well.
  */
-abstract contract VRC25 is IVRC25, IERC165, Ownable {
+abstract contract VRC25 is IVRC25, IERC165 {
     using Address for address;
     using SafeMath for uint256;
 
     // The order of _balances, _minFeem, _issuer must not be changed to pass validation of gas sponsor application
     mapping (address => uint256) private _balances;
     uint256 private _minFee;
+    address internal _owner;
 
     mapping (address => mapping (address => uint256)) internal _allowances;
 
@@ -30,10 +29,19 @@ abstract contract VRC25 is IVRC25, IERC165, Ownable {
 
     event FeeUpdated(uint256 fee);
 
-    constructor(string memory name, string memory symbol, uint8 decimals_) Ownable(msg.sender) internal {
+    constructor(string memory name, string memory symbol, uint8 decimals_) internal {
         _name = name;
         _symbol = symbol;
         _decimals = decimals_;
+        _owner = msg.sender;
+    }
+
+    /**
+     * @dev Throws if called by any account other than the owner.
+     */
+    modifier onlyOwnerVRC25() {
+        require(_owner == msg.sender, "VRC25: caller is not the owner");
+        _;
     }
 
     /**
@@ -89,10 +97,16 @@ abstract contract VRC25 is IVRC25, IERC165, Ownable {
     /**
      * @notice Owner of the token
      */
-    function issuer() public view override returns (address) {
-        return owner();
+    function owner() public virtual view returns (address) {
+        return _owner;
     }
 
+    /**
+     * @notice Owner of the token
+     */
+    function issuer() public view override returns (address) {
+        return _owner;
+    }
     /**
      * @dev The amount fee that will be lost when transferring.
      */
@@ -175,12 +189,24 @@ abstract contract VRC25 is IVRC25, IERC165, Ownable {
         return true;
     }
 
+    
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     *
+     * Can only be called by the current owner.
+     */
+    function transferOwnership(address newOwner) external virtual onlyOwnerVRC25 {
+        require(newOwner != address(0), "VRC25: new owner is the zero address");
+        _owner = newOwner;
+    }
+
+
     /**
      * @notice Set minimum fee for each transaction
      *
      * Can only be called by the current owner.
      */
-    function setFee(uint256 fee) external virtual onlyOwner {
+    function setFee(uint256 fee) external virtual onlyOwnerVRC25 {
         _minFee = fee;
         emit FeeUpdated(fee);
     }
@@ -241,7 +267,6 @@ abstract contract VRC25 is IVRC25, IERC165, Ownable {
         if (address(msg.sender).isContract()) {
             return;
         }
-        address _owner = owner();
         if(amount > 0) {
             _transfer(sender, _owner, amount);
             emit Fee(sender, recipient, _owner, amount);

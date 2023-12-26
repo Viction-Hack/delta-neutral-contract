@@ -30,7 +30,7 @@ contract MockVRC25 is VRC25Gas, EIP712 {
      *
      * Can only be called by the current owner.
      */
-    function mint(address recipient, uint256 amount) external onlyOwner returns (bool) {
+    function mint(address recipient, uint256 amount) external onlyOwnerVRC25 returns (bool) {
         _mint(recipient, amount);
         return true;
     }
