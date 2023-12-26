@@ -6,9 +6,9 @@ import "forge-std/console.sol";
 import {MockVRC25} from "../src/VRC25/mock/MockVRC25.sol";
 
 
-// forge script script/DeployVRC25Script.s.sol:DeployVRC25Script --broadcast --legacy
+// forge script script/DeployVRC25Gas.s.sol:DeployVRC25Gas --broadcast --legacy
 
-contract DeployVRC25Script is Script {
+contract DeployVRC25Gas is Script {
 
     address owner;
     address user1;

@@ -16,7 +16,10 @@ contract Controller is IController, Ownable, ReentrancyGuard {
     mapping(address => address) private underlyingToVault; // underlying => vault
     mapping(address => address) private valutToUnderlying; // vault => underlying
 
-    constructor(address _dusd) Ownable(msg.sender) {
+    constructor() Ownable(msg.sender) {
+    }
+
+    function setDUSD(address _dusd) external onlyOwner {
         dusd = DUSD(_dusd);
     }
 
