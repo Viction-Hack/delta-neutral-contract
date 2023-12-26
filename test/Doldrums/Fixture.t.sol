@@ -44,16 +44,16 @@ contract Fixture is Test {
     function testMintWithVic() public {
         vm.startPrank(user1);
         vm.deal(user1, 100 ether);
-        controller.mint(user1, 100 ether);
+        controller.mintWithVic{value : 100 ether}(user1, 100, block.timestamp + 100);
         console.log("user1 dusd balance : ", dusd.balanceOf(user1));
         vm.stopPrank();
     }
 
     function testMintWithERC20() public {
         vm.startPrank(user1);
-        mockERC20.mint(user1, 100 ether);
-        mockERC20.approve(address(controller), 100 ether);
-        controller.mint(user1, 100 ether);
+        mockERC20.mint(user1, 100 * 10 ** 8);
+        mockERC20.approve(address(controller), 100 * 10 ** 8);
+        controller.mint(address(mockERC20), user1, 100 * 10 ** 8, 100, block.timestamp + 100); 
         console.log("user1 dusd balance : ", dusd.balanceOf(user1));
         vm.stopPrank();
     }

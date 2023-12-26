@@ -30,7 +30,7 @@ contract Vault is Ownable, ReentrancyGuard, IVault {
         uint256 collateralAmountIn,
         uint256 minDUSDCAmountOut,
         uint256 deadline
-    ) external onlyController {
+    ) external payable onlyController {
         _placePerpOrder(
             receiver,
             collateralAmountIn,
@@ -64,14 +64,14 @@ contract Vault is Ownable, ReentrancyGuard, IVault {
         bool isShort
     ) private {
         
-        IPerpDex(perpDex).openPositionFor(
-            address(this),
-            receiver,
-            amountIn,
-            minAmountOut,
-            deadline,
-            isShort
-        ); 
+        // IPerpDex(perpDex).openPositionFor(
+        //     address(this),
+        //     receiver,
+        //     amountIn,
+        //     minAmountOut,
+        //     deadline,
+        //     isShort
+        // ); 
 
         emit PositionRequested(receiver, amountIn, minAmountOut, deadline, isShort);
     }

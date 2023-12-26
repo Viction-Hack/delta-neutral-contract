@@ -53,7 +53,13 @@ contract Controller is IController, Ownable, ReentrancyGuard {
             collateralAmountIn
         );
 
-        _mint(vault, receiver, collateralAmountIn, minDUSDCAmountOut, deadline);
+        // _mint(vault, receiver, collateralAmountIn, minDUSDCAmountOut, deadline);
+        IVault(vault).deposit(
+            receiver,
+            collateralAmountIn,
+            minDUSDCAmountOut,
+            deadline
+        );
     }
 
     function mintWithVic(address receiver, uint256 minDUSDCAmountOut, uint256 deadline)
@@ -63,24 +69,13 @@ contract Controller is IController, Ownable, ReentrancyGuard {
     {
         address vault = underlyingToVault[vic];
 
-        payable(vault).transfer(msg.value);
+        // payable(vault).transfer(msg.value);
 
-        _mint(vault, receiver, msg.value, minDUSDCAmountOut, deadline);
-    }
 
-    /// @dev internal mint function
-    function _mint(
-        address vault,
-        address receiver,
-        uint256 collateralAmountIn,
-        uint256 minDUSDCAmountOut,
-        uint256 deadline
-    )
-        internal
-    {
-        IVault(vault).deposit(
+        // _mint(vault, receiver, msg.value, minDUSDCAmountOut, deadline);
+        IVault(vault).deposit{value: msg.value}(
             receiver,
-            collateralAmountIn,
+            msg.value,
             minDUSDCAmountOut,
             deadline
         );
