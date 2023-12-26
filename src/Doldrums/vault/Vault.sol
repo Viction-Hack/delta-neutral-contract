@@ -5,18 +5,18 @@ import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IVault} from "../interfaces/IVault.sol";
-import {IVaultGateway} from "../interfaces/IVaultGateway.sol";
+import {IDoldrumsGateway} from "../interfaces/IDoldrumsGateway.sol";
 import {IController} from "../interfaces/IController.sol";
 
 contract Vault is Ownable, ReentrancyGuard, IVault {
     address public controller;
     address public underlying;
-    address public vaultGateway;
+    address public doldrumsGateway;
     uint256 public mintedDUSDCAmount;
 
-    constructor(address _controller, address _vaultGateway, address _underyling) Ownable(msg.sender) {
+    constructor(address _controller, address _doldrumsGateway, address _underyling) Ownable(msg.sender) {
         controller = _controller;
-        vaultGateway = _vaultGateway;
+        doldrumsGateway = _doldrumsGateway;
         underlying = _underyling;
     }
 
@@ -55,14 +55,12 @@ contract Vault is Ownable, ReentrancyGuard, IVault {
     function _placePerpOrder(address receiver, uint256 amountIn, uint256 minAmountOut, uint256 deadline, bool isShort)
         private
     {
-        // IVaultGateway(vaultGateway).openPositionFor(
-        //     address(this),
-        //     receiver,
-        //     amountIn,
-        //     minAmountOut,
-        //     deadline,
-        //     isShort
-        // );
+        if (isShort) {
+            IERC20(underlying).approve(doldrumsGateway, amountIn);
+        }
+        IDoldrumsGateway(doldrumsGateway).openPositionFor(
+            isShort, address(this), receiver, amountIn, minAmountOut, deadline
+        );
 
         emit PositionRequested(receiver, amountIn, minAmountOut, deadline, isShort);
     }
@@ -76,8 +74,8 @@ contract Vault is Ownable, ReentrancyGuard, IVault {
         uint256 remainAmount,
         uint256 excutedPrice,
         uint256 excutedFee
-    ) external payable {
-        require(msg.sender == vaultGateway, "Vault: not vaultGateway");
+    ) external {
+        require(msg.sender == doldrumsGateway, "Vault: not doldrumsGateway");
         if (isShort) {
             // mint
             if (success) {
@@ -91,10 +89,10 @@ contract Vault is Ownable, ReentrancyGuard, IVault {
                 // if(underlying == address(0)) {
                 //     payable(receiver).transfer(excutedAmountOut);
                 // } else {
-                //     // *Must need to approve, receive collateral from vaultGateway and transfer to receiver
-                //     IERC20(underlying).transferFrom(vaultGateway, receiver, excutedAmountOut);
+                //     // *Must need to approve, receive collateral from doldrumsGateway and transfer to receiver
+                //     IERC20(underlying).transferFrom(doldrumsGateway, receiver, excutedAmountOut);
                 // }
-                IERC20(underlying).transferFrom(vaultGateway, controller, excutedAmountOut);
+                // IERC20(underlying).transferFrom(doldrumsGateway, controller, excutedAmountOut);
             }
             IController(controller)._redeemAfterVault(success, receiver, orginAmountIn, excutedAmountOut, remainAmount);
         }

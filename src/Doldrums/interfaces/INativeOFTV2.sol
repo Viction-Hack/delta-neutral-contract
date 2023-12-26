@@ -9,5 +9,5 @@ interface INativeOFTV2 is IOFTV2 {
     function deposit() external payable;
 
     /// @notice Withdraw wrapped ether to get ether
-    function withdraw(uint256) external;
+    function withdraw(address, uint256) external;
 }
