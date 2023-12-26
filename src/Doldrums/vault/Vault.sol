@@ -5,18 +5,18 @@ import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IVault} from "../interfaces/IVault.sol";
-import {IPerpDex} from "../interfaces/IPerpDex.sol";
+import {IVaultGateway} from "../interfaces/IVaultGateway.sol";
 import {IController} from "../interfaces/IController.sol";
 
 contract Vault is Ownable, ReentrancyGuard, IVault {
     address public controller;
     address public underlying;
-    address public perpDex;
+    address public vaultGateway;
     uint256 public mintedDUSDCAmount;
 
-    constructor(address _controller, address _perpDex, address _underyling) Ownable(msg.sender) {
+    constructor(address _controller, address _vaultGateway, address _underyling) Ownable(msg.sender) {
         controller = _controller;
-        perpDex = _perpDex;
+        vaultGateway = _vaultGateway;
         underlying = _underyling;
     }
 
@@ -25,12 +25,10 @@ contract Vault is Ownable, ReentrancyGuard, IVault {
         _;
     }
 
-    function deposit(
-        address receiver,
-        uint256 collateralAmountIn,
-        uint256 minDUSDCAmountOut,
-        uint256 deadline
-    ) external onlyController {
+    function deposit(address receiver, uint256 collateralAmountIn, uint256 minDUSDCAmountOut, uint256 deadline)
+        external
+        onlyController
+    {
         _placePerpOrder(
             receiver,
             collateralAmountIn,
@@ -40,12 +38,10 @@ contract Vault is Ownable, ReentrancyGuard, IVault {
         );
     }
 
-    function redeem(
-        address receiver,
-        uint256 dusdAmountIn,
-        uint256 minCollateralAmountOut,
-        uint256 deadline
-    ) external onlyController {
+    function redeem(address receiver, uint256 dusdAmountIn, uint256 minCollateralAmountOut, uint256 deadline)
+        external
+        onlyController
+    {
         require(dusdAmountIn <= mintedDUSDCAmount, "Vault: dusdAmountIn exceed mintedDUSDCAmount");
         _placePerpOrder(
             receiver,
@@ -56,22 +52,17 @@ contract Vault is Ownable, ReentrancyGuard, IVault {
         );
     }
 
-    function _placePerpOrder(
-        address receiver,
-        uint256 amountIn,
-        uint256 minAmountOut,
-        uint256 deadline,
-        bool isShort
-    ) private {
-        
-        // IPerpDex(perpDex).openPositionFor(
+    function _placePerpOrder(address receiver, uint256 amountIn, uint256 minAmountOut, uint256 deadline, bool isShort)
+        private
+    {
+        // IVaultGateway(vaultGateway).openPositionFor(
         //     address(this),
         //     receiver,
         //     amountIn,
         //     minAmountOut,
         //     deadline,
         //     isShort
-        // ); 
+        // );
 
         emit PositionRequested(receiver, amountIn, minAmountOut, deadline, isShort);
     }
@@ -85,29 +76,30 @@ contract Vault is Ownable, ReentrancyGuard, IVault {
         uint256 remainAmount,
         uint256 excutedPrice,
         uint256 excutedFee
-    ) external payable{
-        require (msg.sender == perpDex, "Vault: not perpDex");
-        if (isShort) { // mint
-            if(success){
+    ) external payable {
+        require(msg.sender == vaultGateway, "Vault: not vaultGateway");
+        if (isShort) {
+            // mint
+            if (success) {
                 mintedDUSDCAmount += excutedAmountOut;
             }
             IController(controller)._mintAfterVault(success, receiver, orginAmountIn, excutedAmountOut, remainAmount);
-        } else { // redeem
-            if(success){
+        } else {
+            // redeem
+            if (success) {
                 mintedDUSDCAmount -= (orginAmountIn - remainAmount);
                 // if(underlying == address(0)) {
                 //     payable(receiver).transfer(excutedAmountOut);
                 // } else {
-                //     // *Must need to approve, receive collateral from perpDex and transfer to receiver 
-                //     IERC20(underlying).transferFrom(perpDex, receiver, excutedAmountOut);
+                //     // *Must need to approve, receive collateral from vaultGateway and transfer to receiver
+                //     IERC20(underlying).transferFrom(vaultGateway, receiver, excutedAmountOut);
                 // }
-                IERC20(underlying).transferFrom(perpDex, controller, excutedAmountOut);
+                IERC20(underlying).transferFrom(vaultGateway, controller, excutedAmountOut);
             }
             IController(controller)._redeemAfterVault(success, receiver, orginAmountIn, excutedAmountOut, remainAmount);
         }
-        emit PositionExecuted(success, isShort, receiver, excutedAmountOut, orginAmountIn, remainAmount, excutedPrice, excutedFee);
+        emit PositionExecuted(
+            success, isShort, receiver, excutedAmountOut, orginAmountIn, remainAmount, excutedPrice, excutedFee
+        );
     }
-
-
 }
-

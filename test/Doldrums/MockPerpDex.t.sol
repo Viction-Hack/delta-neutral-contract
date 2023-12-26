@@ -2,19 +2,40 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
+import "./Fixture.t.sol";
 import "../../src/Doldrums/perpdex/MockPerpDex.sol";
 import {Vault} from "../../src/Doldrums/vault/Vault.sol";
 import {Controller} from "../../src/Doldrums/core/Controller.sol";
 
-contract MockPerpDexTest is Test {
+contract MockPerpDexTest is Test, Fixture {
     Controller controller;
     MockPerpDex mockPerpDex;
+    DUSD dusd;
+    MOCKOFTV2 weth;
+    MOCKOFTV2 dai;
     Vault vault;
+    Vault vicVault;
+    Vault wethVault;
+    Vault daiVault;
     address receiver;
+    address lzEndpoint;
 
     function setUp() public {
+        super.setUp();
         mockPerpDex = new MockPerpDex();
-        vault = new Vault(address(0x0), address(mockPerpDex), address(0x0));
+        address gateway = makeAddr("gateway");
+        lzEndpoint = makeAddr("lzEndpoint");
+        vault = new Vault(address(controller), address(mockPerpDex), address(0x0));
+        dusd = new DUSD(address(controller),lzEndpoint);
+        dai = new MOCKOFTV2("DAI","DAI",8,lzEndpoint);
+        weth = new MOCKOFTV2("WETH","WETH",8,lzEndpoint);
+        vicVault = new Vault(address(controller),address(mockPerpDex),address(wvic));
+        daiVault = new Vault(address(controller),address(mockPerpDex),address(dai));
+        wethVault = new Vault(address(controller),address(mockPerpDex),address(weth));
+        controller.setDUSD(address(dusd));
+        controller.registerVault(address(wvic), address(vicVault));
+        controller.registerVault(address(dai), address(daiVault));
+        controller.registerVault(address(weth), address(wethVault));
 
         receiver = address(this);
 
@@ -44,5 +65,22 @@ contract MockPerpDexTest is Test {
         mockPerpDex.changeOraclePrice(address(vault), newPrice);
 
         assertEq(mockPerpDex.priceOracle(address(vault)), newPrice);
+    }
+
+    function testMintWithVic() public {
+        vm.startPrank(user1);
+        vm.deal(user1, 100 ether);
+        controller.mintWithVic{value: 100 ether}(user1, 100, block.timestamp + 100);
+        console.log("user1 dusd balance : ", dusd.balanceOf(user1));
+        vm.stopPrank();
+    }
+
+    function testMintWithERC20() public {
+        vm.startPrank(user1);
+        mockOFTV2.mint(user1, 100 * 10 ** 8);
+        mockOFTV2.approve(address(controller), 100 * 10 ** 8);
+        controller.mint(address(mockOFTV2), user1, 100 * 10 ** 8, 100, block.timestamp + 100);
+        console.log("user1 dusd balance : ", dusd.balanceOf(user1));
+        vm.stopPrank();
     }
 }
