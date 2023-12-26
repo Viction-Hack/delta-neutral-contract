@@ -2,10 +2,12 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../../src/Doldrums/perpdex/MockPerpDex.sol"; // 경로는 실제 구조에 따라 조정하세요
-import {Vault} from "../../src/Doldrums/vault/Vault.sol"; // Vault 컨트랙트의 경로도 실제 구조에 맞게 조정하세요
+import "../../src/Doldrums/perpdex/MockPerpDex.sol";
+import {Vault} from "../../src/Doldrums/vault/Vault.sol";
+import {Controller} from "../../src/Doldrums/core/Controller.sol";
 
 contract MockPerpDexTest is Test {
+    Controller controller;
     MockPerpDex mockPerpDex;
     Vault vault;
     address receiver;
