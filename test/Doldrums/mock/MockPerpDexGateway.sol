@@ -29,6 +29,7 @@ contract MockPerpDexGateway is IGateway {
             )
         );
 
+
         IMockPerpDex.PositionInfo memory positionInfo;
 
         if (success) {
@@ -39,7 +40,7 @@ contract MockPerpDexGateway is IGateway {
         if (success) {
             transferAmount = positionInfo.isShort ? positionInfo.remainAmount : positionInfo.executedAmountOut;
         } else {
-            transferAmount = positionInfo.isShort ? positionInfo.amountIn : 0;
+            transferAmount = positionInfo.isShort ? amountIn : 0;
         }
 
         if (transferAmount > 0) {
