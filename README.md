@@ -1,66 +1,33 @@
-## Foundry
+## Doldrums Protocol
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Doldrums is a protocol for issuing a Delta-Neutral Stablecoin. It integrates with various features like native Zero Gas transactions at Viction, supports a wider range of assets, and solves the problem of liquidity fragmentation.
 
-Foundry consists of:
+### Main Features
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+- **Delta-Neutral Hedging**: Maintains a delta-neutral position by hedging the underlying asset on perpetual DEX.
+- **Multi-Chain Support**: Uses Layer Zero(OFT V2) as a multi-chain framework, supports Viction Chain and Arbitrum.
+- **Gasless VRC-25**: DUSD implements VRC-25 to support gasless transactions.
 
-## Documentation
+### Contracts Architecture
 
-https://book.getfoundry.sh/
+![contracts](./docs/contracts.png)
 
-## Usage
+### Contract Addresses
 
-### Build
+| Contract Name | Viction Chain Address | Arbitrum Address |
+| :------------ | :-------------------: | :--------------: |
+| a             |                       |                  |
 
-```shell
-$ forge build
-```
+### Whitepaper
 
-### Test
+Please refer to the [whitepaper](./docs/whitepaper.pdf) for more details.
 
-```shell
-$ forge test
-```
+### Team Members
 
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+- Sangwon Moon
+- Seungmin Jeon
+- Wonjae Choi
+  - Email: choi@wonj.me
+  - Github: [@wonj1012](www.github.com/wonj1012)
+  - LinkedIn: [Wonjae Choi](https://www.linkedin.com/in/wonj/)
+  - Homepage: [wonj.me](https://wonj.me)
