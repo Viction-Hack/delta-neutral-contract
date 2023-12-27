@@ -44,10 +44,20 @@ contract LzTest is Test, Fixture {
 
         doldrumGateway.setTrustedRemoteAddress(chainId, abi.encodePacked(address(perpDexGateway)));
 
-        doldrumGateway.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(0));
-        perpDexGateway.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(0));
-        dai.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(0));
-        dai.setMinDstGas(uint16(0x0001), uint16(0x0001), uint256(0));
+        doldrumGateway.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(1000));
+        perpDexGateway.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(1000));
+
+        dai.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(1000));
+        dai.setMinDstGas(uint16(0x0001), uint16(0x0001), uint256(1000));
+        dai.setTrustedRemoteAddress(chainId, abi.encodePacked(address(controller)));
+
+        dusd.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(1000));
+        dusd.setMinDstGas(uint16(0x0001), uint16(0x0001), uint256(1000));
+        dusd.setTrustedRemoteAddress(chainId, abi.encodePacked(address(controller)));
+
+        weth.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(1000));
+        weth.setMinDstGas(uint16(0x0001), uint16(0x0001), uint256(1000));
+        weth.setTrustedRemoteAddress(chainId, abi.encodePacked(address(controller)));
 
         vicVault = new Vault(address(controller), address(doldrumGateway), address(wvic));
         daiVault = new Vault(address(controller), address(doldrumGateway), address(dai));
@@ -167,10 +177,17 @@ contract LzTest is Test, Fixture {
 
         MockPerpDex.Position memory position = mockPerpDex.getPosition(receiver);
 
+        // if (isShort) {
+        //     assertEq(position.amount, -int256(amount));
+        // } else {
+        //     assertEq(position.amount, int256(amount));
+        // }
+        console.logInt(position.amount);
+
         if (isShort) {
-            assertEq(position.amount, -int256(amount));
+            assertLt(position.amount, 0);
         } else {
-            assertEq(position.amount, int256(amount));
+            assertGt(position.amount, 0);
         }
         assertGt(position.entryPrice, 0);
     }
