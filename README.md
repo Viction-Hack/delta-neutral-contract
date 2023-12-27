@@ -11,12 +11,17 @@ Doldrums is a protocol for issuing a Delta-Neutral Stablecoin. It integrates wit
 ### Contracts Architecture
 
 ![contracts](./docs/contracts.png)
+![dusd](./docs/DUSD.png)
 
 ### Contract Addresses
 
 | Contract Name | Viction Chain Address | Arbitrum Address |
 | :------------ | :-------------------: | :--------------: |
 | a             |                       |                  |
+
+### Roadmap
+
+![roadmap](./docs/roadmap.png)
 
 ### Whitepaper
 
