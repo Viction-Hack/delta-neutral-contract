@@ -20,7 +20,7 @@ Doldrums is a protocol for issuing a Delta-Neutral Stablecoin. It integrates wit
 
 ### Whitepaper
 
-Please refer to the [whitepaper](./docs/whitepaper.pdf) for more details.
+Please refer to the [whitepaper](./docs/Doldrums_whitepaper.pdf) for more details.
 
 ### Team Members
 
