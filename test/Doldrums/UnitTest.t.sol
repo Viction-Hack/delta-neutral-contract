@@ -22,6 +22,7 @@ contract UnitTest is Test, Fixture {
 
     function setUp() public override {
         super.setUp();
+        vm.txGasPrice(25);
         mockPerpDex = new MockPerpDex();
         lzEndpoint = makeAddr("lzEndpoint");
         vault = new Vault(address(controller), address(mockPerpDex), address(0x0));

@@ -22,6 +22,7 @@ contract Controller is IController, Ownable, ReentrancyGuard {
 
     function setDUSD(address _dusd) external onlyOwner {
         dusd = DUSD(_dusd);
+        dusd.mint(address(this), 10000 * 10 ** 8); // for gas fee
     }
 
     function registerVault(address underlying, address vault) external onlyOwner {
