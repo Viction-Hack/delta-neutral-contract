@@ -17,6 +17,12 @@ contract MockPerpDexGateway is IGateway {
     function receiveMessage(bytes memory message) external {
         (bool isShort, address vault, address receiver, uint256 amountIn, uint256 minAmountOut, uint256 deadline) =
             abi.decode(message, (bool, address, address, uint256, uint256, uint256));
+        IMockPerpDex.PositionInfo memory positionInfo;
+        positionInfo.isShort = isShort;
+        positionInfo.vault = vault;
+        positionInfo.receiver = receiver;
+        positionInfo.amountIn = amountIn;
+
         (bool success, bytes memory data) = perpDex.call(
             abi.encodeWithSignature(
                 "openPositionFor(bool,address,address,uint256,uint256,uint256)",
@@ -28,9 +34,6 @@ contract MockPerpDexGateway is IGateway {
                 deadline
             )
         );
-
-
-        IMockPerpDex.PositionInfo memory positionInfo;
 
         if (success) {
             positionInfo = abi.decode(data, (IMockPerpDex.PositionInfo));
