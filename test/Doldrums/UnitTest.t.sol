@@ -48,22 +48,36 @@ contract UnitTest is Test, Fixture {
         mockPerpDex.changeOraclePrice(address(wethVault), 2000 * 10 ** 8); // 3 USD로 설정
     }
 
-    function testMint() public {
+    function testMint() public returns (uint256) {
         vm.startPrank(user1);
         dai.mint(user1, 100 * 10 ** 8);
         // dai.mint(address(daiVault), 100 * 10 ** 8);
         dai.approve(address(controller), 100 * 10 ** 8);
         controller.mint(address(dai), user1, 100 * 10 ** 8, 50 * 10 ** 8, block.timestamp + 100);
-        console.log("user1 dusd balance : ", dusd.balanceOf(user1));
+        uint256 dusdBalance = dusd.balanceOf(user1);
+        console.log("user1 dusd balance : ", dusdBalance);
+        return dusdBalance;
         vm.stopPrank();
     }
 
-    function testMintWithVic() public {
+    function testMintWithVic() public returns (uint256) {
         vm.startPrank(user1);
         vm.deal(user1, 100 ether);
         // vm.deal(address(vicVault), 100 ether);
         controller.mintWithVic{value: 100 ether}(user1, 0, block.timestamp + 100);
+        uint256 dusdBalance = dusd.balanceOf(user1);
+        console.log("user1 dusd balance : ", dusdBalance);
+        return dusdBalance;
+        vm.stopPrank();
+    }
+
+    function testRedeem() public {
+        uint256 dusdBalance = testMint();
+        vm.startPrank(user1);
+        dusd.approve(address(controller), dusdBalance);
+        controller.redeem(address(dai), user1, dusdBalance, 0, block.timestamp + 100);
         console.log("user1 dusd balance : ", dusd.balanceOf(user1));
+        console.log("user1 dai balance : ", dai.balanceOf(user1));
         vm.stopPrank();
     }
 

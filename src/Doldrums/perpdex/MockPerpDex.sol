@@ -55,10 +55,10 @@ contract MockPerpDex is IMockPerpDex {
             position.entryPrice = uint256(newNetValue / position.amount);
         } else {
             // stop with usd
-            positionInfo.executedPrice = price * 102 / 100 / 10 ** 8; // 2% slippage
+            positionInfo.executedPrice = price * 102 / 100; // 2% slippage
             positionInfo.executedFee = amountIn / 1000; // 0.1% fee
             executedAmount = amountIn - positionInfo.executedFee;
-            positionInfo.executedAmountOut = executedAmount / positionInfo.executedPrice / 10 ** 8; // amount is collateral
+            positionInfo.executedAmountOut = executedAmount * 10 ** 8 / positionInfo.executedPrice; // amount is collateral
             newNetValue = position.amount * int256(position.entryPrice) + int256(executedAmount);
             position.amount += int256(positionInfo.executedAmountOut);
             position.entryPrice = uint256(newNetValue / position.amount);

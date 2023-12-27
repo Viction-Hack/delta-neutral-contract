@@ -20,9 +20,11 @@ contract MockDoldrumsGateway is IGateway {
         uint256 deadline
     ) external {
         bytes memory message = abi.encode(isShort, vault, receiver, amountIn, minAmountOut, deadline);
-        (, bytes memory data) = vault.call(abi.encodeWithSignature("underlying()"));
-        address underlying = abi.decode(data, (address));
-        IERC20(underlying).transferFrom(vault, perpDexGateway, amountIn);
+        if (isShort) {
+            (, bytes memory data) = vault.call(abi.encodeWithSignature("underlying()"));
+            address underlying = abi.decode(data, (address));
+            IERC20(underlying).transferFrom(vault, perpDexGateway, amountIn);
+        }
         perpDexGateway.call(abi.encodeWithSignature("receiveMessage(bytes)", message));
     }
 

@@ -118,6 +118,12 @@ contract Controller is IController, Ownable, ReentrancyGuard {
             revert NotApproved(address(dusd), msg.sender, dusdAmountIn);
         }
 
+        address account = msg.sender;
+        if (dusd.allowance(account, address(this)) < dusdAmountIn) {
+            revert NotApproved(address(dusd), account, dusdAmountIn);
+        }
+
+        dusd.transferFrom(account, address(this), dusdAmountIn);
         address vault = underlyingToVault[underlying];
 
         IVault(vault).redeem(receiver, dusdAmountIn, minCollateralAmountOut, deadline);
