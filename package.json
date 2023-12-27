@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@layerzerolabs/lz-evm-oapp-v2": "^2.0.2",
     "@layerzerolabs/solidity-examples": "^1.1.0"
   }
 }

@@ -8,6 +8,7 @@ import {Vault} from "../../src/Doldrums/vault/Vault.sol";
 import {Controller} from "../../src/Doldrums/core/Controller.sol";
 import {MockDoldrumsGateway} from "./mock/MockDoldrumsGateway.sol";
 import {MockPerpDexGateway} from "./mock/MockPerpDexGateway.sol";
+import {MockRelayer} from "./mock/MockRelayer.sol";
 
 contract UnitTest is Test, Fixture {
     MockPerpDex mockPerpDex;
@@ -18,21 +19,32 @@ contract UnitTest is Test, Fixture {
     Vault vicVault;
     Vault wethVault;
     Vault daiVault;
+    MockRelayer vicEndpoint;
+    MockRelayer arbEndpoint;
     address receiver;
+    uint32 constant vicId = 10196;
+    uint32 constant arbId = 10231;
 
     function setUp() public override {
         super.setUp();
         vm.txGasPrice(25);
         mockPerpDex = new MockPerpDex();
-        lzEndpoint = makeAddr("lzEndpoint");
+        vicEndpoint = new MockRelayer();
+        arbEndpoint = new MockRelayer();
         vault = new Vault(address(controller), address(mockPerpDex), address(0x0));
-        dusd = new DUSD(address(controller),lzEndpoint);
-        dai = new MOCKOFTV2("DAI","DAI",8,lzEndpoint);
-        weth = new MOCKOFTV2("WETH","WETH",8,lzEndpoint);
-        MockDoldrumsGateway mockDoldrumsGateway = new MockDoldrumsGateway();
+        dusd = new DUSD(address(controller), address(vicEndpoint));
+        dai = new MOCKOFTV2("DAI","DAI",8, address(vicEndpoint));
+        weth = new MOCKOFTV2("WETH","WETH",8, address(vicEndpoint));
+        MockDoldrumsGateway mockDoldrumsGateway = new MockDoldrumsGateway(address(vicEndpoint));
         MockPerpDexGateway mockPerpDexGateway =
-            new MockPerpDexGateway(address(mockDoldrumsGateway), address(mockPerpDex));
+            new MockPerpDexGateway(address(arbEndpoint), address(mockDoldrumsGateway), address(mockPerpDex));
         mockDoldrumsGateway.setPerpDexGateway(address(mockPerpDexGateway));
+        mockDoldrumsGateway.setPeer(arbId, bytes32(bytes20(address(mockPerpDexGateway))));
+        mockPerpDexGateway.setPeer(vicId, bytes32(bytes20(address(mockDoldrumsGateway))));
+        arbEndpoint.setEndpointId(address(mockPerpDexGateway), arbId);
+        arbEndpoint.setCrossEndpoint(address(vicEndpoint));
+        vicEndpoint.setEndpointId(address(mockDoldrumsGateway), vicId);
+        vicEndpoint.setCrossEndpoint(address(arbEndpoint));
         vicVault = new Vault(address(controller),address(mockDoldrumsGateway),address(wvic));
         daiVault = new Vault(address(controller),address(mockDoldrumsGateway),address(dai));
         wethVault = new Vault(address(controller),address(mockDoldrumsGateway),address(weth));
