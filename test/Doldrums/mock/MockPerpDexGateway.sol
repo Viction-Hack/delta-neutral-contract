@@ -12,9 +12,12 @@ contract MockPerpDexGateway is Gateway, IGateway {
     address public doldrumsGateway;
     address public perpDex;
 
-    constructor(address endPoint, address _doldrumsGateway, address _perpDex) Gateway(endPoint, msg.sender) {
-        doldrumsGateway = _doldrumsGateway;
+    constructor(address endPoint, address _perpDex) Gateway(endPoint, msg.sender) {
         perpDex = _perpDex;
+    }
+
+    function setDoldrumsGateway(address _doldrumsGateway) external {
+        doldrumsGateway = _doldrumsGateway;
     }
 
     function _lzReceive(

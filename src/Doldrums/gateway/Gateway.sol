@@ -7,6 +7,8 @@ import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 abstract contract Gateway is OApp {
     constructor(address _endpoint, address _owner) OApp(_endpoint, _owner) Ownable(_owner) {}
 
+    receive() external payable {}
+
     // Sends a message from the source to destination chain.
     function send(uint32 _dstEid, bytes memory _payload) public payable {
         bytes memory _options = "0x00030100110100000000000000000000000000030d40";
@@ -14,8 +16,8 @@ abstract contract Gateway is OApp {
             _dstEid, // Destination chain's endpoint ID.
             _payload, // Encoded message payload being sent.
             _options, // Message execution options (e.g., gas to use on destination).
-            MessagingFee(msg.value, 0), // Fee struct containing native gas and ZRO token.
-            payable(msg.sender) // The refund address in case the send call reverts.
+            MessagingFee(35000, 0), // Fee struct containing native gas and ZRO token.
+            payable(owner()) // The refund address in case the send call reverts.
         );
     }
 
