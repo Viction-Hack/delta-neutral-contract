@@ -149,7 +149,7 @@ contract Controller is IController, Ownable, ReentrancyGuard {
         }
         _transfer(underlying, receiver, excutedCollateralAmountOut);
 
-        dusd.burn(receiver, dusdAmountIn - remainAmount);
+        dusd.burn(address(this), dusdAmountIn - remainAmount);
         emit Redeemed(receiver, dusdAmountIn - remainAmount, excutedCollateralAmountOut, remainAmount);
     }
 

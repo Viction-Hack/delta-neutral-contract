@@ -76,8 +76,20 @@ contract UnitTest is Test, Fixture {
         vm.startPrank(user1);
         dusd.approve(address(controller), dusdBalance);
         controller.redeem(address(dai), user1, dusdBalance, 0, block.timestamp + 100);
-        console.log("user1 dusd balance : ", dusd.balanceOf(user1));
-        console.log("user1 dai balance : ", dai.balanceOf(user1));
+        console.log("after user1 dusd balance : ", dusd.balanceOf(user1));
+        console.log("after user1 dai balance : ", dai.balanceOf(user1));
+        console.log("after controller dusd balance : ", dusd.balanceOf(address(controller)));
+        vm.stopPrank();
+    }
+
+    function testRedeemWithVic() public {
+        uint256 dusdBalance = testMintWithVic();
+        vm.startPrank(user1);
+        dusd.approve(address(controller), dusdBalance);
+        controller.redeem(address(wvic), user1, dusdBalance, 0, block.timestamp + 100);
+        console.log("after user1 dusd balance : ", dusd.balanceOf(user1));
+        console.log("after user1 vic balance : ", user1.balance);
+        console.log("after controller dusd balance : ", dusd.balanceOf(address(controller)));
         vm.stopPrank();
     }
 
