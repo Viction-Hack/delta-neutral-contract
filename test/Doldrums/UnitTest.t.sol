@@ -22,8 +22,8 @@ contract UnitTest is Test, Fixture {
     MockRelayer vicLzEndpoint;
     MockRelayer arbLzEndpoint;
     address receiver;
-    uint32 constant vicId = 10196;
-    uint32 constant arbId = 10231;
+    uint16 constant vicId = 10196;
+    uint16 constant arbId = 10231;
 
     function setUp() public override {
         super.setUp();
@@ -35,12 +35,13 @@ contract UnitTest is Test, Fixture {
         dusd = new DUSD(address(controller), address(vicLzEndpoint));
         dai = new MOCKOFTV2("DAI","DAI",8, address(vicLzEndpoint));
         weth = new MOCKOFTV2("WETH","WETH",8, address(vicLzEndpoint));
-        MockDoldrumsGateway mockDoldrumsGateway = new MockDoldrumsGateway(address(vicLzEndpoint));
-        MockPerpDexGateway mockPerpDexGateway = new MockPerpDexGateway(address(arbLzEndpoint), address(mockPerpDex));
+        MockDoldrumsGateway mockDoldrumsGateway = new MockDoldrumsGateway(arbId,address(vicLzEndpoint));
+        MockPerpDexGateway mockPerpDexGateway =
+            new MockPerpDexGateway(vicId,address(arbLzEndpoint), address(mockPerpDex));
         mockDoldrumsGateway.setPerpDexGateway(address(mockPerpDexGateway));
         mockPerpDexGateway.setDoldrumsGateway(address(mockDoldrumsGateway));
-        mockDoldrumsGateway.setPeer(arbId, bytes32(bytes20(address(mockPerpDexGateway))));
-        mockPerpDexGateway.setPeer(vicId, bytes32(bytes20(address(mockDoldrumsGateway))));
+        // mockDoldrumsGateway.setPeer(arbId, bytes32(bytes20(address(mockPerpDexGateway))));
+        // mockPerpDexGateway.setPeer(vicId, bytes32(bytes20(address(mockDoldrumsGateway))));
         arbLzEndpoint.setEndpointId(address(mockPerpDexGateway), arbId);
         arbLzEndpoint.setCrossEndpoint(address(vicLzEndpoint));
         vicLzEndpoint.setEndpointId(address(mockDoldrumsGateway), vicId);

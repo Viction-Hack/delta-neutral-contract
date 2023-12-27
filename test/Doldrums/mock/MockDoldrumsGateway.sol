@@ -3,14 +3,16 @@ pragma solidity ^0.8.20;
 
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IGateway} from "../../../src/Doldrums/interfaces/IGateway.sol";
-import "../../../src/Doldrums/gateway/Gateway.sol";
+import "../../../src/Doldrums/gateway/GatewayV1.sol";
 
 contract MockDoldrumsGateway is Gateway, IGateway {
-    uint32 public constant dstEid = 10231;
+    uint16 public dstEid;
     // address public constant endPoint = 0xae92d5aD7583AD66E49A0c67BAd18F6ba52dDDc1;
     address public perpDexGateway;
 
-    constructor(address endPoint) Gateway(endPoint, msg.sender) {}
+    constructor(uint16 _dstEid, address endPoint) Gateway(endPoint, msg.sender) {
+        dstEid = _dstEid;
+    }
 
     function setPerpDexGateway(address _perpDexGateway) external {
         perpDexGateway = _perpDexGateway;
@@ -34,17 +36,17 @@ contract MockDoldrumsGateway is Gateway, IGateway {
         send(dstEid, message);
     }
 
-    function _lzReceive(
-        Origin calldata _origin, // struct containing info about the message sender
-        bytes32 _guid, // global packet identifier
-        bytes calldata payload, // encoded message payload being received
-        address _executor, // the Executor address.
-        bytes calldata _extraData // arbitrary data appended by the Executor
-    ) internal override {
-        receiveMessage(payload);
-    }
+    // function _lzReceive(
+    //     Origin calldata _origin, // struct containing info about the message sender
+    //     bytes32 _guid, // global packet identifier
+    //     bytes calldata payload, // encoded message payload being received
+    //     address _executor, // the Executor address.
+    //     bytes calldata _extraData // arbitrary data appended by the Executor
+    // ) internal override {
+    //     receiveMessage(payload);
+    // }
 
-    function receiveMessage(bytes memory message) public {
+    function receiveMessage(bytes memory message) public override {
         MessageInfo memory messageInfo = abi.decode(message, (MessageInfo));
 
         uint256 transferAmount;
