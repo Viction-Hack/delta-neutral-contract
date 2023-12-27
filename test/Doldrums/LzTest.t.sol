@@ -26,10 +26,11 @@ contract LzTest is Test, Fixture {
         super.setUp();
         vm.txGasPrice(25);
 
-        uint16 chainId = 0x0001;
+        uint16 victionChainId = 0x0001;
+        uint16 arbitrumChainId = 0x0002;
 
         mockPerpDex = new MockPerpDex();
-        mockRelayer = new MockRelayer(chainId);
+        mockRelayer = new MockRelayer(victionChainId);
         lzEndpoint = address(mockRelayer);
         vault = new Vault(address(controller), address(mockPerpDex), address(0x0));
         dusd = new DUSD(address(controller), lzEndpoint);
@@ -42,22 +43,23 @@ contract LzTest is Test, Fixture {
 
         doldrumGateway.setPerpDexGateway(address(perpDexGateway));
 
-        doldrumGateway.setTrustedRemoteAddress(chainId, abi.encodePacked(address(perpDexGateway)));
+        doldrumGateway.setTrustedRemoteAddress(arbitrumChainId, abi.encodePacked(address(perpDexGateway)));
 
-        doldrumGateway.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(1000));
-        perpDexGateway.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(1000));
+        doldrumGateway.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(300000));
+        perpDexGateway.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(300000));
 
-        dai.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(1000));
-        dai.setMinDstGas(uint16(0x0001), uint16(0x0001), uint256(1000));
-        dai.setTrustedRemoteAddress(chainId, abi.encodePacked(address(controller)));
+        dai.setMinDstGas(uint16(0x0002), uint16(0x0000), uint256(300000));
+        dai.setMinDstGas(uint16(0x0002), uint16(0x0001), uint256(300000));
+        // dai.setTrustedRemoteAddress(victionChainId, abi.encodePacked(address(controller)));
+        dai.setTrustedRemoteAddress(arbitrumChainId, abi.encodePacked(address(perpDexGateway)));
 
-        dusd.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(1000));
-        dusd.setMinDstGas(uint16(0x0001), uint16(0x0001), uint256(1000));
-        dusd.setTrustedRemoteAddress(chainId, abi.encodePacked(address(controller)));
+        dusd.setMinDstGas(uint16(0x0002), uint16(0x0000), uint256(300000));
+        dusd.setMinDstGas(uint16(0x0002), uint16(0x0001), uint256(300000));
+        dusd.setTrustedRemoteAddress(arbitrumChainId, abi.encodePacked(address(perpDexGateway)));
 
-        weth.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(1000));
-        weth.setMinDstGas(uint16(0x0001), uint16(0x0001), uint256(1000));
-        weth.setTrustedRemoteAddress(chainId, abi.encodePacked(address(controller)));
+        weth.setMinDstGas(uint16(0x0002), uint16(0x0000), uint256(300000));
+        weth.setMinDstGas(uint16(0x0002), uint16(0x0001), uint256(300000));
+        weth.setTrustedRemoteAddress(arbitrumChainId, abi.encodePacked(address(perpDexGateway)));
 
         vicVault = new Vault(address(controller), address(doldrumGateway), address(wvic));
         daiVault = new Vault(address(controller), address(doldrumGateway), address(dai));
@@ -190,6 +192,11 @@ contract LzTest is Test, Fixture {
             assertGt(position.amount, 0);
         }
         assertGt(position.entryPrice, 0);
+    }
+
+    function testDeposit() public {
+        vm.prank(address(controller));
+        daiVault.deposit(receiver, 100 * 10 ** 8, 0, block.timestamp + 100);
     }
 
     function testChangeOraclePrice() public {

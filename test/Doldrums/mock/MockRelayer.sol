@@ -19,8 +19,9 @@ contract MockRelayer is ILayerZeroEndpoint {
         address _zroPaymentAddress,
         bytes calldata _adapterParams
     ) external payable override {
-        bytes memory senderBytes = abi.encodePacked(bytes32(bytes20(msg.sender)));
-        LzApp(address(bytes20(_destination))).lzReceive(chainId, senderBytes, 0, _payload);
+        LzApp(address(bytes20(_destination))).lzReceive(
+            chainId, abi.encodePacked(bytes32(bytes20(msg.sender))), 0, _payload
+        );
     }
 
     function receivePayload(

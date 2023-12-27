@@ -10,7 +10,7 @@ import {IGateway} from "../../../src/Doldrums/interfaces/IGateway.sol";
 
 contract DoldrumGateway is IGateway, LzApp {
     address public perpDexGateway;
-    uint16 private constant _dstChainId = 0x0001;
+    uint16 private constant _dstChainId = 0x0002;
 
     constructor(address _lzEndpoint) LzApp(_lzEndpoint) Ownable(msg.sender) {}
 
