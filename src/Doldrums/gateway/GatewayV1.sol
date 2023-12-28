@@ -20,6 +20,9 @@ abstract contract Gateway is NonblockingLzApp {
         uint256 gasForDestinationLzReceive = 350000;
         bytes memory adapterParams = abi.encodePacked(version, gasForDestinationLzReceive);
 
+        (uint256 nativeFee, uint256 zroFee) =
+            lzEndpoint.estimateFees(_dstEid, address(this), _payload, false, adapterParams);
+
         // send LayerZero message
         _lzSend( // {value: messageFee} will be paid out of this contract!
             _dstEid, // destination chainId
@@ -27,7 +30,7 @@ abstract contract Gateway is NonblockingLzApp {
             payable(this), // (msg.sender will be this contract) refund address (LayerZero will refund any extra gas back to caller of send())
             address(0x0), // future param, unused for this example
             adapterParams, // v1 adapterParams, specify custom destination gas qty
-            address(this).balance
+            nativeFee
         );
     }
 
@@ -40,21 +43,21 @@ abstract contract Gateway is NonblockingLzApp {
         receiveMessage(_payload);
     }
 
-    function lzReceive(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload)
-        public
-        virtual
-        override
-    {
-        bytes memory trustedRemote = trustedRemoteLookup[_srcChainId];
-        // if will still block the message pathway from (srcChainId, srcAddress). should not receive message from untrusted remote.
-        require(
-            _srcAddress.length == trustedRemote.length && trustedRemote.length > 0
-                && keccak256(_srcAddress) == keccak256(trustedRemote),
-            "LzApp: invalid source sending contract"
-        );
+    // function lzReceive(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload)
+    //     public
+    //     virtual
+    //     override
+    // {
+    //     bytes memory trustedRemote = trustedRemoteLookup[_srcChainId];
+    //     // if will still block the message pathway from (srcChainId, srcAddress). should not receive message from untrusted remote.
+    //     require(
+    //         _srcAddress.length == trustedRemote.length && trustedRemote.length > 0
+    //             && keccak256(_srcAddress) == keccak256(trustedRemote),
+    //         "LzApp: invalid source sending contract"
+    //     );
 
-        _blockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
-    }
+    //     _blockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
+    // }
 
     function receiveMessage(bytes memory message) public virtual;
 }

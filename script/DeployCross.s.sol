@@ -9,35 +9,41 @@ import "./Fixture.s.sol";
 contract DeployCross is Fixture {
     function setUp() public virtual override {
         super.setUp();
+        wvic = MOCKNativeOFTV2(payable(0x24c470BF5Fd6894BC935d7A4c0Aa65f6Ad8E3D5a));
+        dai = MOCKOFTV2(0xEC3Ac809B27da7cdFC306792DA72aA896ed865eD);
+        weth = MOCKOFTV2(0xA5f8B90975C6f3b15c90CbC75b44F10300b42bbe);
+        controller = Controller(0x31C6d1884E408B63A910eF547afdA1180d919e13);
+        dusd = DUSD(payable(0x46F96fB34Ac52DaE43E7FC441F429d2F5BcCDf52));
 
-        wvic = MOCKNativeOFTV2(payable(0x8269c57FBea0176ae1d4e302661c07ae11873751));
-        dai = MOCKOFTV2(0xa21b20E49c92653bA143009B89d936818a3b7609);
-        weth = MOCKOFTV2(0x43f9440E54123f288d319C355671Dad9F27c2986);
-        controller = Controller(0x0789FdE58A90c4B80C273767dbe5165ba4c9c518);
-        DUSD dusd = DUSD(0x8ec92FE248Fcf857d0F1cD1346AE3264bC0376A1);
+        dusd2 = DUSD(payable(0xf40E719D4F215712D9DC9a0568791E408c71760F));
+        mockDoldrumsGateway = MockDoldrumsGateway(payable(0x6b5749854cF3d44688baa009bb419b82EFcD3a17));
+        vicVault = Vault(0xD0d5E2931C9134b6E8DDe9Be67E814f4bFF50bC5);
+        daiVault = Vault(0x109Eca9F83C18Da5563b5c978E421444c8A37E55);
+        wethVault = Vault(0xAdbb76D0454De0365a9c1D6a93DdAD7CCa572BbA);
+        mockPerpDex = MockPerpDex(0xf8efeBAec7C3a37106e14a8d4994Db730dDbC08F);
+        mockPerpDexGateway = MockPerpDexGateway(payable(0xdb3975365f1c8258758D4D55687F659d58B74F13));
+    }
 
-        mockDoldrumsGateway = MockDoldrumsGateway(payable(0xCAD8BD4F0286B8dE164DC8548689F8C4788C901C));
-        vicVault = Vault(0xde22aE28d9dad32938fe339f5E7a999Ff737e907);
-        daiVault = Vault(0x95df672dA95De0b85272E46576d9C3EEd18c1482);
-        wethVault = Vault(0xa5643aeDf7d69AABd53F2e3a610ACeC8B2ae6338);
-        mockPerpDex = MockPerpDex(0x07DCBBd3dD79AD8adA931b184Ba3e5e61366588B);
-        mockPerpDexGateway = MockPerpDexGateway(payable(0x1a46BE221D71E75b3c555E430B4bdAdE202B35D3));
-
+    function run() public virtual {
+        console.log("");
         console.log("#### On Main Chain ####");
         vm.selectFork(rpcIndex[main]);
         vm.startBroadcast(vm.envUint("PRIVATE_KEY1"));
-        // mockDoldrumsGateway.setPeer(arbId, bytes32(bytes20(address(mockPerpDexGateway))));
+
         mockDoldrumsGateway.setTrustedRemoteAddress(uint16(arbId), abi.encodePacked(address(mockPerpDexGateway)));
-        // (bool success, bytes memory result) =
-        //     VRCIssuer.call{value: 10 ether}(abi.encodeWithSignature("apply(address)", dusd));
+        // mockDoldrumsGateway.setMinDstGas(arbId, 0, 220000);
+        // mockDoldrumsGateway.setUseCustomAdapterParams(true);
+        dusd.setTrustedRemoteAddress(uint16(arbId), abi.encodePacked(address(dusd2)));
+        dusd.setMinDstGas(arbId, 0, 220000);
+        dusd.setUseCustomAdapterParams(true);
+
         dai.mint(owner, 100 * 10 ** 8);
         weth.mint(owner, 100 * 10 ** 8);
         dai.approve(address(controller), 100 * 10 ** 8);
-        address owner = vm.addr(vm.envUint("PRIVATE_KEY1"));
         address(mockDoldrumsGateway).call{value: 10 ether}("");
         controller.mint(address(dai), owner, 100 * 10 ** 8, 0, 1000000000000000000000000000);
-        vm.stopBroadcast();
-    }
 
-    function run() public virtual {}
+        // (bool success, bytes memory result) =
+        //     VRCIssuer.call{value: 10 ether}(abi.encodeWithSignature("apply(address)", dusd));
+    }
 }

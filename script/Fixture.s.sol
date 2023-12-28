@@ -32,7 +32,7 @@ contract Fixture is Script {
     Endpoint vicLzEndpoint;
     Endpoint arbLzEndpoint;
     uint16 constant vicId = 10196;
-    uint16 constant arbId = 10161;
+    uint16 constant arbId = 10106;
     string constant main = "viction";
     string constant sub = "arbitrum";
     mapping(string => uint256) rpcIndex;
@@ -43,6 +43,7 @@ contract Fixture is Script {
     MOCKOFTV2 dai;
 
     DUSD dusd;
+    DUSD dusd2;
 
     MockDoldrumsGateway mockDoldrumsGateway;
     MockPerpDexGateway mockPerpDexGateway;
@@ -55,13 +56,13 @@ contract Fixture is Script {
         // string memory victionTestRPC = "https://rpc-testnet.viction.xyz";
         string memory victionTestRPC = "https://rpc.testnet.tomochain.com";
         // string memory arbitrumTestRPC = "https://sepolia-rollup.arbitrum.io/rpc";
-        string memory arbitrumTestRPC = "https://rpc.sepolia.org";
+        string memory arbitrumTestRPC = "https://api.avax-test.network/ext/bc/C/rpc";
 
         rpcIndex["viction"] = vm.createFork(victionTestRPC);
         rpcIndex["arbitrum"] = vm.createFork(arbitrumTestRPC);
 
         vicLzEndpoint = Endpoint(0xae92d5aD7583AD66E49A0c67BAd18F6ba52dDDc1);
-        arbLzEndpoint = Endpoint(0xae92d5aD7583AD66E49A0c67BAd18F6ba52dDDc1);
+        arbLzEndpoint = Endpoint(0x93f54D755A063cE7bB9e6Ac47Eccc8e33411d706);
 
         owner = vm.addr(vm.envUint("PRIVATE_KEY1"));
         user1 = vm.addr(vm.envUint("PRIVATE_KEY2"));

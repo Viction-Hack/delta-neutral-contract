@@ -32,7 +32,7 @@ contract UnitTest is Test, Fixture {
         vicLzEndpoint = new MockRelayer();
         arbLzEndpoint = new MockRelayer();
         vault = new Vault(address(controller), address(mockPerpDex), address(0x0));
-        dusd = new DUSD(address(controller), address(vicLzEndpoint));
+        dusd = new DUSD(owner,address(controller), address(vicLzEndpoint));
         dai = new MOCKOFTV2("DAI","DAI",8, address(vicLzEndpoint));
         weth = new MOCKOFTV2("WETH","WETH",8, address(vicLzEndpoint));
         MockDoldrumsGateway mockDoldrumsGateway = new MockDoldrumsGateway(arbId,address(vicLzEndpoint));
