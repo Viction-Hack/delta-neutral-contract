@@ -17,7 +17,7 @@ Doldrums is a protocol for issuing a Delta-Neutral Stablecoin. It integrates wit
 
 ### Contract Addresses
 
-|  Contract Name  	|               Viction Address              	|                Fuji Address                	|
+|  Contract Name  	|           TOMO Testnet Address              	|                Fuji Address                	|
 |:---------------:	|:------------------------------------------:	|:------------------------------------------:	|
 |    Controller   	| 0x31C6d1884E408B63A910eF547afdA1180d919e13 	|                                            	|
 |       DUSD      	| 0x46F96fB34Ac52DaE43E7FC441F429d2F5BcCDf52 	| 0xf40E719D4F215712D9DC9a0568791E408c71760F 	|
