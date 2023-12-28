@@ -6,9 +6,11 @@ import "./Fixture.t.sol";
 import "../../src/Doldrums/perpdex/MockPerpDex.sol";
 import {Vault} from "../../src/Doldrums/vault/Vault.sol";
 import {Controller} from "../../src/Doldrums/core/Controller.sol";
+import {MockDoldrumsGateway} from "./mock/MockDoldrumsGateway.sol";
+import {MockPerpDexGateway} from "./mock/MockPerpDexGateway.sol";
+import {MockRelayer} from "./mock/MockRelayer.sol";
 
 contract UnitTest is Test, Fixture {
-    Controller controller;
     MockPerpDex mockPerpDex;
     DUSD dusd;
     MOCKOFTV2 weth;
@@ -17,21 +19,36 @@ contract UnitTest is Test, Fixture {
     Vault vicVault;
     Vault wethVault;
     Vault daiVault;
+    MockRelayer vicLzEndpoint;
+    MockRelayer arbLzEndpoint;
     address receiver;
-    address lzEndpoint;
+    uint16 constant vicId = 10196;
+    uint16 constant arbId = 10231;
 
-    function setUp() public {
+    function setUp() public override {
         super.setUp();
+        vm.txGasPrice(25);
         mockPerpDex = new MockPerpDex();
-        address gateway = makeAddr("gateway");
-        lzEndpoint = makeAddr("lzEndpoint");
+        vicLzEndpoint = new MockRelayer();
+        arbLzEndpoint = new MockRelayer();
         vault = new Vault(address(controller), address(mockPerpDex), address(0x0));
-        dusd = new DUSD(address(controller),lzEndpoint);
-        dai = new MOCKOFTV2("DAI","DAI",8,lzEndpoint);
-        weth = new MOCKOFTV2("WETH","WETH",8,lzEndpoint);
-        vicVault = new Vault(address(controller),gateway,address(wvic));
-        daiVault = new Vault(address(controller),gateway,address(dai));
-        wethVault = new Vault(address(controller),gateway,address(weth));
+        dusd = new DUSD(owner,address(controller), address(vicLzEndpoint));
+        dai = new MOCKOFTV2("DAI","DAI",8, address(vicLzEndpoint));
+        weth = new MOCKOFTV2("WETH","WETH",8, address(vicLzEndpoint));
+        MockDoldrumsGateway mockDoldrumsGateway = new MockDoldrumsGateway(arbId,address(vicLzEndpoint));
+        MockPerpDexGateway mockPerpDexGateway =
+            new MockPerpDexGateway(vicId,address(arbLzEndpoint), address(mockPerpDex));
+        mockDoldrumsGateway.setPerpDexGateway(address(mockPerpDexGateway));
+        mockPerpDexGateway.setDoldrumsGateway(address(mockDoldrumsGateway));
+        // mockDoldrumsGateway.setPeer(arbId, bytes32(bytes20(address(mockPerpDexGateway))));
+        // mockPerpDexGateway.setPeer(vicId, bytes32(bytes20(address(mockDoldrumsGateway))));
+        arbLzEndpoint.setEndpointId(address(mockPerpDexGateway), arbId);
+        arbLzEndpoint.setCrossEndpoint(address(vicLzEndpoint));
+        vicLzEndpoint.setEndpointId(address(mockDoldrumsGateway), vicId);
+        vicLzEndpoint.setCrossEndpoint(address(arbLzEndpoint));
+        vicVault = new Vault(address(controller),address(mockDoldrumsGateway),address(wvic));
+        daiVault = new Vault(address(controller),address(mockDoldrumsGateway),address(dai));
+        wethVault = new Vault(address(controller),address(mockDoldrumsGateway),address(weth));
         controller.setDUSD(address(dusd));
         controller.registerVault(address(wvic), address(vicVault));
         controller.registerVault(address(dai), address(daiVault));
@@ -45,13 +62,105 @@ contract UnitTest is Test, Fixture {
         mockPerpDex.changeOraclePrice(address(wethVault), 2000 * 10 ** 8); // 3 USD로 설정
     }
 
+    function testMint() public returns (uint256) {
+        vm.startPrank(user1);
+        dai.mint(user1, 100 * 10 ** 8);
+        // dai.mint(address(daiVault), 100 * 10 ** 8);
+        dai.approve(address(controller), 100 * 10 ** 8);
+        controller.mint(address(dai), user1, 100 * 10 ** 8, 50 * 10 ** 8, block.timestamp + 100);
+        uint256 dusdBalance = dusd.balanceOf(user1);
+        console.log("user1 dai balance : ", dai.balanceOf(user1));
+        console.log("user1 dusd balance : ", dusdBalance);
+        return dusdBalance;
+        vm.stopPrank();
+    }
+
+    function testMintWithVic() public returns (uint256) {
+        vm.startPrank(user1);
+        vm.deal(user1, 100 * 10 ** 8);
+        // vm.deal(address(vicVault), 100 * 10 ** 8);
+        controller.mintWithVic{value: 100 * 10 ** 8}(user1, 0, block.timestamp + 100);
+        uint256 dusdBalance = dusd.balanceOf(user1);
+        console.log("user1 vic balance : ", user1.balance);
+        console.log("user1 dusd balance : ", dusdBalance);
+        return dusdBalance;
+        vm.stopPrank();
+    }
+
+    function testRedeem() public {
+        uint256 dusdBalance = testMint();
+        vm.startPrank(user1);
+        dusd.approve(address(controller), dusdBalance);
+        controller.redeem(address(dai), user1, dusdBalance, 0, block.timestamp + 100);
+        console.log("after user1 dusd balance : ", dusd.balanceOf(user1));
+        console.log("after user1 dai balance : ", dai.balanceOf(user1));
+        console.log("after controller dusd balance : ", dusd.balanceOf(address(controller)));
+        vm.stopPrank();
+    }
+
+    function testRedeemWithVic() public {
+        uint256 dusdBalance = testMintWithVic();
+        vm.startPrank(user1);
+        dusd.approve(address(controller), dusdBalance);
+        controller.redeem(address(wvic), user1, dusdBalance, 0, block.timestamp + 100);
+        console.log("after user1 dusd balance : ", dusd.balanceOf(user1));
+        console.log("after user1 vic balance : ", user1.balance);
+        console.log("after controller dusd balance : ", dusd.balanceOf(address(controller)));
+        vm.stopPrank();
+    }
+
+    function testMintFail() public {
+        vm.startPrank(user1);
+        dai.mint(user1, 100 * 10 ** 8);
+        // dai.mint(address(daiVault), 100 * 10 ** 8);
+        dai.approve(address(controller), 100 * 10 ** 8);
+        controller.mint(address(dai), user1, 100 * 10 ** 8, 100 * 10 ** 8, block.timestamp + 100);
+        uint256 dusdBalance = dusd.balanceOf(user1);
+        console.log("user1 dai balance : ", dai.balanceOf(user1));
+        console.log("user1 dusd balance : ", dusdBalance);
+        vm.stopPrank();
+    }
+
+    function testMintWithVicFail() public {
+        vm.startPrank(user1);
+        vm.deal(user1, 100 * 10 ** 8);
+        // vm.deal(address(vicVault), 100 * 10 ** 8);
+        controller.mintWithVic{value: 100 * 10 ** 8}(user1, 100 * 10 ** 8, block.timestamp + 100);
+        uint256 dusdBalance = dusd.balanceOf(user1);
+        console.log("user1 vic balance : ", user1.balance);
+        console.log("user1 dusd balance : ", dusdBalance);
+        vm.stopPrank();
+    }
+
+    function testRedeemFail() public {
+        uint256 dusdBalance = testMint();
+        vm.startPrank(user1);
+        dusd.approve(address(controller), dusdBalance);
+        controller.redeem(address(dai), user1, dusdBalance, 100 * 10 ** 8, block.timestamp + 100);
+        console.log("after user1 dusd balance : ", dusd.balanceOf(user1));
+        console.log("after user1 dai balance : ", dai.balanceOf(user1));
+        console.log("after controller dusd balance : ", dusd.balanceOf(address(controller)));
+        vm.stopPrank();
+    }
+
+    function testRedeemWithVicFail() public {
+        uint256 dusdBalance = testMintWithVic();
+        vm.startPrank(user1);
+        dusd.approve(address(controller), dusdBalance);
+        controller.redeem(address(wvic), user1, dusdBalance, 100 * 10 ** 8, block.timestamp + 100);
+        console.log("after user1 dusd balance : ", dusd.balanceOf(user1));
+        console.log("after user1 vic balance : ", user1.balance);
+        console.log("after controller dusd balance : ", dusd.balanceOf(address(controller)));
+        vm.stopPrank();
+    }
+
     function testOpenPosition() public {
         uint256 amount = 10 ether;
         uint256 minAmountOut = 9 * 3000;
         uint256 deadline = block.timestamp + 1 hours;
         bool isShort = true;
 
-        mockPerpDex.openPositionFor(address(vault), receiver, amount, minAmountOut, deadline, isShort);
+        mockPerpDex.openPositionFor(isShort, address(vault), receiver, amount, minAmountOut, deadline);
 
         MockPerpDex.Position memory position = mockPerpDex.getPosition(receiver);
 
@@ -68,22 +177,5 @@ contract UnitTest is Test, Fixture {
         mockPerpDex.changeOraclePrice(address(vault), newPrice);
 
         assertEq(mockPerpDex.priceOracle(address(vault)), newPrice);
-    }
-
-    function testMintWithVic() public {
-        vm.startPrank(user1);
-        vm.deal(user1, 100 ether);
-        controller.mintWithVic{value: 100 ether}(user1, 100, block.timestamp + 100);
-        console.log("user1 dusd balance : ", dusd.balanceOf(user1));
-        vm.stopPrank();
-    }
-
-    function testMintWithERC20() public {
-        vm.startPrank(user1);
-        mockOFTV2.mint(user1, 100 * 10 ** 8);
-        mockOFTV2.approve(address(controller), 100 * 10 ** 8);
-        controller.mint(address(mockOFTV2), user1, 100 * 10 ** 8, 100, block.timestamp + 100);
-        console.log("user1 dusd balance : ", dusd.balanceOf(user1));
-        vm.stopPrank();
     }
 }

@@ -12,22 +12,20 @@ abstract contract VRC25Gas is VRC25 {
 
     event GasFee(address indexed from, address indexed to, uint256 fee);
 
-    constructor(string memory name, string memory symbol, uint8 decimal) VRC25(name,symbol,decimal) {
-    }
+    constructor(string memory name, string memory symbol, uint8 decimal) VRC25(name, symbol, decimal) {}
 
-    modifier gasCalc {
+    modifier gasCalc() {
         uint256 gasBefore = gasleft();
         _;
-        uint256 oraclePrice = 1;
+        uint256 oraclePrice = 8 / 10 * 10 ** 10; // DUSD/VIC
         uint256 gasConsumed = gasBefore - gasleft();
-        uint256 extraGas = estimateTransferGas(_owner,(gasConsumed + BASE_GAS) * tx.gasprice); 
+        uint256 extraGas = estimateTransferGas(_owner, (gasConsumed + BASE_GAS) * tx.gasprice);
         uint256 totalGas = extraGas + gasConsumed;
         uint256 gasFee = totalGas * tx.gasprice;
-        uint256 convertedFee = gasFee * oraclePrice;
+        uint256 convertedFee = gasFee / oraclePrice;
         _transfer(msg.sender, _owner, convertedFee);
         emit GasFee(msg.sender, _owner, convertedFee);
     }
-
 
     function estimateTransferGas(address recipient, uint256 amount) public view returns (uint256) {
         uint256 estimatedGas = BASE_GAS;
@@ -49,12 +47,18 @@ abstract contract VRC25Gas is VRC25 {
         return true;
     }
 
-    function approve(address spender, uint256 amount) external override gasCalc returns (bool) {
-        _approve(msg.sender, spender, amount);
-        return true;
-    }
+    // function approve(address spender, uint256 amount) external override gasCalc returns (bool) {
+    //     _approve(msg.sender, spender, amount);
+    //     return true;
+    // }
 
-    function transferFrom(address sender, address recipient, uint256 amount) virtual external override gasCalc returns (bool) {
+    function transferFrom(address sender, address recipient, uint256 amount)
+        external
+        virtual
+        override
+        gasCalc
+        returns (bool)
+    {
         require(_allowances[sender][msg.sender] >= amount, "VRC25: amount exeeds allowance");
 
         _allowances[sender][msg.sender] = _allowances[sender][msg.sender].sub(amount);
@@ -66,5 +70,4 @@ abstract contract VRC25Gas is VRC25 {
         _burn(msg.sender, amount);
         return true;
     }
-
 }

@@ -12,18 +12,17 @@ import {MOCKOFTV2} from "../../src/mock/MockOFTV2.sol";
 import {MOCKNativeOFTV2} from "../../src/mock/MockNativeOFTV2.sol";
 
 contract Fixture is Test {
-    address constant lzEndpoint = 0xae92d5aD7583AD66E49A0c67BAd18F6ba52dDDc1;
-
     address owner;
     address user1;
     address user2;
     address user3;
     address user4;
+    address lzEndpoint;
 
     Controller controller;
     MOCKNativeOFTV2 wvic;
 
-    function setUp() public {
+    function setUp() public virtual {
         owner = makeAddr("owner");
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
