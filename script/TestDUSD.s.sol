@@ -5,9 +5,6 @@ import "./Fixture.s.sol";
 // import {DUSD} from "../test/Doldrums/mock/DUSD.sol";
 import {DUSD} from "../src/Doldrums/dusd/DUSD.sol";
 
-// forge script script/DeployCross.s.sol --broadcast --gas-limit 10000000000 --with-gas-price 1000000000 --evm-version london --optimizer-runs 200
-// forge script script/DeployCross.s.sol --broadcast --legacy
-
 contract TestDUSD is Fixture {
     DUSD Tdusd;
     DUSD Tdusd2;

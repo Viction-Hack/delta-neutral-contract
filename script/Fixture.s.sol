@@ -20,8 +20,6 @@ import {MockPerpDexGateway} from "../test/Doldrums/mock/MockPerpDexGateway.sol";
 import {Vault} from "../src/Doldrums/vault/Vault.sol";
 import {MockPerpDex} from "../src/Doldrums/perpdex/MockPerpDex.sol";
 
-// forge script script/DeployDUSD.s.sol:DeployDUSD --broadcast --legacy
-
 contract Fixture is Script {
     address owner;
     address user1;

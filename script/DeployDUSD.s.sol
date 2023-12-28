@@ -4,8 +4,6 @@ pragma solidity ^0.8.20;
 import "./DeployFixture.s.sol";
 import {Create2} from "./Create2.sol";
 
-// forge script script/DeployDUSD.s.sol:DeployDUSD --broadcast --legacy
-
 contract DeployDUSD is DeployFixture {
     function setUp() public virtual override {
         super.setUp();

@@ -3,8 +3,6 @@ pragma solidity ^0.8.20;
 
 import "./DeployDUSD.s.sol";
 
-// forge script script/DeployDoldrums.s.sol --broadcast --legacy
-
 contract DeployDoldrums is DeployDUSD {
     function setUp() public virtual override {
         super.setUp();

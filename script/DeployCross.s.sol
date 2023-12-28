@@ -3,9 +3,6 @@ pragma solidity ^0.8.20;
 
 import "./Fixture.s.sol";
 
-// forge script script/DeployCross.s.sol --broadcast --gas-limit 10000000000 --with-gas-price 1000000000 --evm-version london --optimizer-runs 200
-// forge script script/DeployCross.s.sol --broadcast --legacy
-
 contract DeployCross is Fixture {
     function setUp() public virtual override {
         super.setUp();
