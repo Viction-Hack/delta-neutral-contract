@@ -1,22 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {LzApp} from "@layerzerolabs/solidity-examples/contracts/lzApp/LzApp.sol";
+import {IOFTV2} from "@layerzerolabs/solidity-examples/contracts/token/oft/v2/interfaces/IOFTV2.sol";
+import {ICommonOFT} from "@layerzerolabs/solidity-examples/contracts/token/oft/v2/interfaces/ICommonOFT.sol";
 import {IGateway} from "../../../src/Doldrums/interfaces/IGateway.sol";
 import {IMockPerpDex} from "../../../src/Doldrums/interfaces/IMockPerpDex.sol";
+import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 
-contract MockPerpDexGateway is IGateway {
+contract PerpDexGateway is IGateway, LzApp {
     address public doldrumsGateway;
     address public perpDex;
+    uint16 private constant _dstChainId = 0x0001;
 
-    constructor(address _doldrumsGateway, address _perpDex) {
+    constructor(address _doldrumsGateway, address _perpDex, address _lzEndpoint)
+        LzApp(_lzEndpoint)
+        Ownable(msg.sender)
+    {
         doldrumsGateway = _doldrumsGateway;
         perpDex = _perpDex;
     }
 
-    function receiveMessage(bytes memory message) external {
+    function _blockingLzReceive(uint16 _srcChainId, bytes memory _srcAddress, uint64 _nonce, bytes memory _payload)
+        internal
+        override
+    {
         (bool isShort, address vault, address receiver, uint256 amountIn, uint256 minAmountOut, uint256 deadline) =
-            abi.decode(message, (bool, address, address, uint256, uint256, uint256));
+            abi.decode(_payload, (bool, address, address, uint256, uint256, uint256));
         IMockPerpDex.PositionInfo memory positionInfo;
         positionInfo.isShort = isShort;
         positionInfo.vault = vault;
@@ -46,13 +56,7 @@ contract MockPerpDexGateway is IGateway {
             transferAmount = positionInfo.isShort ? amountIn : 0;
         }
 
-        if (transferAmount > 0) {
-            (, data) = positionInfo.vault.call(abi.encodeWithSignature("underlying()"));
-            address underlying = abi.decode(data, (address));
-            IERC20(underlying).transfer(doldrumsGateway, transferAmount);
-        }
-
-        bytes memory message = abi.encode(
+        bytes memory payload = abi.encode(
             success,
             positionInfo.isShort,
             positionInfo.vault,
@@ -63,6 +67,21 @@ contract MockPerpDexGateway is IGateway {
             positionInfo.executedPrice,
             positionInfo.executedFee
         );
-        doldrumsGateway.call(abi.encodeWithSignature("receiveMessage(bytes)", message));
+
+        bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(350000));
+
+        if (transferAmount > 0) {
+            (, data) = positionInfo.vault.call(abi.encodeWithSignature("underlying()"));
+            address underlying = abi.decode(data, (address));
+            IOFTV2(underlying).sendAndCall(
+                address(this),
+                _dstChainId,
+                bytes32(bytes20(doldrumsGateway)),
+                transferAmount,
+                payload,
+                uint64(0),
+                ICommonOFT.LzCallParams(payable(msg.sender), address(0x0), adapterParams)
+            );
+        }
     }
 }

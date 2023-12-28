@@ -17,12 +17,12 @@ abstract contract VRC25Gas is VRC25 {
     modifier gasCalc() {
         uint256 gasBefore = gasleft();
         _;
-        uint256 oraclePrice = 8 / 10 * 10 ** 10; // DUSD/VIC
+        uint256 oraclePrice = 1;
         uint256 gasConsumed = gasBefore - gasleft();
         uint256 extraGas = estimateTransferGas(_owner, (gasConsumed + BASE_GAS) * tx.gasprice);
         uint256 totalGas = extraGas + gasConsumed;
         uint256 gasFee = totalGas * tx.gasprice;
-        uint256 convertedFee = gasFee / oraclePrice;
+        uint256 convertedFee = gasFee * oraclePrice;
         _transfer(msg.sender, _owner, convertedFee);
         emit GasFee(msg.sender, _owner, convertedFee);
     }

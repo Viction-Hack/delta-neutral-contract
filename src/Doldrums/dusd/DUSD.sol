@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+
 import "../../VRC25/libraries/ECDSA.sol";
 import "../../VRC25/libraries/EIP712.sol";
 
-import "./OFTVRC25GasV1.sol";
+import "./OFTVRC25Gas.sol";
 
 contract DUSD is OFTVRC25Gas, EIP712 {
     using Address for address;
@@ -14,12 +15,8 @@ contract DUSD is OFTVRC25Gas, EIP712 {
     uint8 public constant DECIMALS = 8;
     address public controller;
 
-    constructor(address _owner, address _controller, address _lzEndpoint)
-        OFTVRC25Gas(NAME, SYMBOL, DECIMALS, _lzEndpoint)
-        EIP712("VRC25", "1")
-    {
+    constructor(address _controller, address _lzEndpoint) OFTVRC25Gas(NAME, SYMBOL, DECIMALS, _lzEndpoint) EIP712("VRC25", "1") {
         controller = _controller;
-        transferOwnership(_owner);
     }
 
     modifier onlyController() {
@@ -53,4 +50,7 @@ contract DUSD is OFTVRC25Gas, EIP712 {
         emit Transfer(account, address(0), amount);
         return true;
     }
+
+    
+
 }
