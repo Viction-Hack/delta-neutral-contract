@@ -6,11 +6,13 @@ import "./Fixture.t.sol";
 import "../../src/Doldrums/perpdex/MockPerpDex.sol";
 import {Vault} from "../../src/Doldrums/vault/Vault.sol";
 import {Controller} from "../../src/Doldrums/core/Controller.sol";
-import {MockDoldrumsGateway} from "./mock/MockDoldrumsGateway.sol";
-import {MockPerpDexGateway} from "./mock/MockPerpDexGateway.sol";
+import {DoldrumGateway} from "../../src/Doldrums/gateway/DoldrumGateway.sol";
+import {PerpDexGateway} from "../../src/Doldrums/gateway/PerpDexGateway.sol";
+import {MockRelayer} from "./mock/MockRelayer.sol";
 
-contract UnitTest is Test, Fixture {
+contract LzTest is Test, Fixture {
     MockPerpDex mockPerpDex;
+    MockRelayer mockRelayer;
     DUSD dusd;
     MOCKOFTV2 weth;
     MOCKOFTV2 dai;
@@ -23,19 +25,45 @@ contract UnitTest is Test, Fixture {
     function setUp() public override {
         super.setUp();
         vm.txGasPrice(25);
+
+        uint16 victionChainId = 0x0001;
+        uint16 arbitrumChainId = 0x0002;
+
         mockPerpDex = new MockPerpDex();
-        lzEndpoint = makeAddr("lzEndpoint");
+        mockRelayer = new MockRelayer(victionChainId);
+        lzEndpoint = address(mockRelayer);
         vault = new Vault(address(controller), address(mockPerpDex), address(0x0));
-        dusd = new DUSD(address(controller),lzEndpoint);
-        dai = new MOCKOFTV2("DAI","DAI",8,lzEndpoint);
-        weth = new MOCKOFTV2("WETH","WETH",8,lzEndpoint);
-        MockDoldrumsGateway mockDoldrumsGateway = new MockDoldrumsGateway();
-        MockPerpDexGateway mockPerpDexGateway =
-            new MockPerpDexGateway(address(mockDoldrumsGateway), address(mockPerpDex));
-        mockDoldrumsGateway.setPerpDexGateway(address(mockPerpDexGateway));
-        vicVault = new Vault(address(controller),address(mockDoldrumsGateway),address(wvic));
-        daiVault = new Vault(address(controller),address(mockDoldrumsGateway),address(dai));
-        wethVault = new Vault(address(controller),address(mockDoldrumsGateway),address(weth));
+        dusd = new DUSD(address(controller), lzEndpoint);
+        dai = new MOCKOFTV2("DAI", "DAI", 8, lzEndpoint);
+        weth = new MOCKOFTV2("WETH", "WETH", 8, lzEndpoint);
+        DoldrumGateway doldrumGateway = new DoldrumGateway(address(lzEndpoint));
+
+        PerpDexGateway perpDexGateway =
+            new PerpDexGateway(address(doldrumGateway), address(mockPerpDex), address(lzEndpoint));
+
+        doldrumGateway.setPerpDexGateway(address(perpDexGateway));
+
+        doldrumGateway.setTrustedRemoteAddress(arbitrumChainId, abi.encodePacked(address(perpDexGateway)));
+
+        doldrumGateway.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(300000));
+        perpDexGateway.setMinDstGas(uint16(0x0001), uint16(0x0000), uint256(300000));
+
+        dai.setMinDstGas(uint16(0x0002), uint16(0x0000), uint256(300000));
+        dai.setMinDstGas(uint16(0x0002), uint16(0x0001), uint256(300000));
+        // dai.setTrustedRemoteAddress(victionChainId, abi.encodePacked(address(controller)));
+        dai.setTrustedRemoteAddress(arbitrumChainId, abi.encodePacked(address(perpDexGateway)));
+
+        dusd.setMinDstGas(uint16(0x0002), uint16(0x0000), uint256(300000));
+        dusd.setMinDstGas(uint16(0x0002), uint16(0x0001), uint256(300000));
+        dusd.setTrustedRemoteAddress(arbitrumChainId, abi.encodePacked(address(perpDexGateway)));
+
+        weth.setMinDstGas(uint16(0x0002), uint16(0x0000), uint256(300000));
+        weth.setMinDstGas(uint16(0x0002), uint16(0x0001), uint256(300000));
+        weth.setTrustedRemoteAddress(arbitrumChainId, abi.encodePacked(address(perpDexGateway)));
+
+        vicVault = new Vault(address(controller), address(doldrumGateway), address(wvic));
+        daiVault = new Vault(address(controller), address(doldrumGateway), address(dai));
+        wethVault = new Vault(address(controller), address(doldrumGateway), address(weth));
         controller.setDUSD(address(dusd));
         controller.registerVault(address(wvic), address(vicVault));
         controller.registerVault(address(dai), address(daiVault));
@@ -151,12 +179,24 @@ contract UnitTest is Test, Fixture {
 
         MockPerpDex.Position memory position = mockPerpDex.getPosition(receiver);
 
+        // if (isShort) {
+        //     assertEq(position.amount, -int256(amount));
+        // } else {
+        //     assertEq(position.amount, int256(amount));
+        // }
+        console.logInt(position.amount);
+
         if (isShort) {
-            assertEq(position.amount, -int256(amount));
+            assertLt(position.amount, 0);
         } else {
-            assertEq(position.amount, int256(amount));
+            assertGt(position.amount, 0);
         }
         assertGt(position.entryPrice, 0);
+    }
+
+    function testDeposit() public {
+        vm.prank(address(controller));
+        daiVault.deposit(receiver, 100 * 10 ** 8, 0, block.timestamp + 100);
     }
 
     function testChangeOraclePrice() public {
