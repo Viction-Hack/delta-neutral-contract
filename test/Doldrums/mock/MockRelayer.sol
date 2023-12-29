@@ -2,32 +2,37 @@
 pragma solidity ^0.8.20;
 
 import {MessagingParams} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
-import {
-    ILayerZeroReceiver, Origin
-} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroReceiver.sol";
+
+interface IGateway {
+    function lzReceive(
+        bytes calldata payload // encoded message payload being received
+    ) external;
+}
 
 contract MockRelayer {
-    mapping(address => uint32) public endpointIds;
+    address public gateway;
     address public crossEndpoints;
-    mapping(address => uint32) public nonce;
 
-    function setDelegate(address _delegate) external {}
-
-    function setEndpointId(address _endpoint, uint32 _eid) external {
-        endpointIds[_endpoint] = _eid;
+    function setGateway(address _gateway) external {
+        gateway = _gateway;
     }
 
     function setCrossEndpoint(address _crossEndpoint) external {
         crossEndpoints = _crossEndpoint;
     }
 
-    function send(MessagingParams calldata _params, address _refundAddress) external payable {
-        Origin memory _origin = Origin(endpointIds[msg.sender], bytes32(bytes20(msg.sender)), nonce[msg.sender]);
-        MockRelayer(crossEndpoints).cross(_origin, _params, _refundAddress);
+    function send(
+        uint16 _dstChainId,
+        bytes calldata _destination,
+        bytes calldata _payload,
+        address payable _refundAddress,
+        address _zroPaymentAddress,
+        bytes calldata _adapterParams
+    ) external payable {
+        MockRelayer(crossEndpoints).cross(_payload);
     }
 
-    function cross(Origin memory _origin, MessagingParams calldata _params, address _refundAddress) external payable {
-        address _receiver = address(bytes20(_params.receiver));
-        ILayerZeroReceiver(_receiver).lzReceive(_origin, bytes32(0), _params.message, address(0), bytes(""));
+    function cross(bytes calldata _payload) external payable {
+        IGateway(gateway).lzReceive(_payload);
     }
 }

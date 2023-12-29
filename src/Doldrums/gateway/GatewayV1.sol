@@ -14,7 +14,7 @@ abstract contract Gateway is NonblockingLzApp {
     }
 
     // Sends a message from the source to destination chain.
-    function send(uint16 _dstEid, bytes memory _payload) public payable {
+    function send(uint16 _dstEid, bytes memory _payload) public payable virtual {
         // encode the adapter parameters
         uint16 version = 1;
         uint256 gasForDestinationLzReceive = 350000;
@@ -42,22 +42,6 @@ abstract contract Gateway is NonblockingLzApp {
     ) internal override {
         receiveMessage(_payload);
     }
-
-    // function lzReceive(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload)
-    //     public
-    //     virtual
-    //     override
-    // {
-    //     bytes memory trustedRemote = trustedRemoteLookup[_srcChainId];
-    //     // if will still block the message pathway from (srcChainId, srcAddress). should not receive message from untrusted remote.
-    //     require(
-    //         _srcAddress.length == trustedRemote.length && trustedRemote.length > 0
-    //             && keccak256(_srcAddress) == keccak256(trustedRemote),
-    //         "LzApp: invalid source sending contract"
-    //     );
-
-    //     _blockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
-    // }
 
     function receiveMessage(bytes memory message) public virtual;
 }

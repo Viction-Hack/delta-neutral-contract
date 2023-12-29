@@ -11,21 +11,14 @@ import {MOCKOFTV2} from "../src/mock/MockOFTV2.sol";
 
 import {DUSD} from "../src/Doldrums/dusd/DUSD.sol";
 
-import {MockDoldrumsGateway} from "../test/Doldrums/mock/MockDoldrumsGateway.sol";
-import {MockPerpDexGateway} from "../test/Doldrums/mock/MockPerpDexGateway.sol";
-import {Vault} from "../src/Doldrums/vault/Vault.sol";
-import {MockPerpDex} from "../src/Doldrums/perpdex/MockPerpDex.sol";
-
-import {MockPerpDexGateway} from "../test/Doldrums/mock/MockPerpDexGateway.sol";
+import {DoldrumsGateway} from "../src/Doldrums/gateway/DoldrumsGateway.sol";
+import {PerpDexGateway} from "../src/Doldrums/gateway/PerpDexGateway.sol";
 import {Vault} from "../src/Doldrums/vault/Vault.sol";
 import {MockPerpDex} from "../src/Doldrums/perpdex/MockPerpDex.sol";
 
 contract Fixture is Script {
     address owner;
     address user1;
-    address user2;
-    address user3;
-    address user4;
     address constant VRCIssuer = 0x8c0faeb5C6bEd2129b8674F262Fd45c4e9468bee;
     Endpoint vicLzEndpoint;
     Endpoint arbLzEndpoint;
@@ -43,8 +36,8 @@ contract Fixture is Script {
     DUSD dusd;
     DUSD dusd2;
 
-    MockDoldrumsGateway mockDoldrumsGateway;
-    MockPerpDexGateway mockPerpDexGateway;
+    DoldrumsGateway doldrumsGateway;
+    PerpDexGateway perpDexGateway;
     Vault vicVault;
     Vault wethVault;
     Vault daiVault;
@@ -64,14 +57,8 @@ contract Fixture is Script {
 
         owner = vm.addr(vm.envUint("PRIVATE_KEY1"));
         user1 = vm.addr(vm.envUint("PRIVATE_KEY2"));
-        user2 = vm.addr(vm.envUint("PRIVATE_KEY3"));
-        user3 = makeAddr("user3");
-        user4 = makeAddr("user4");
 
         console.log("owner: ", owner);
         console.log("user1: ", user1);
-        console.log("user2: ", user2);
-        console.log("user3: ", user3);
-        console.log("user4: ", user4);
     }
 }

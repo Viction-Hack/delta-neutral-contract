@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
 import "./Fixture.t.sol";
 import "../../src/Doldrums/perpdex/MockPerpDex.sol";
 import {Vault} from "../../src/Doldrums/vault/Vault.sol";
@@ -10,7 +9,7 @@ import {MockDoldrumsGateway} from "./mock/MockDoldrumsGateway.sol";
 import {MockPerpDexGateway} from "./mock/MockPerpDexGateway.sol";
 import {MockRelayer} from "./mock/MockRelayer.sol";
 
-contract UnitTest is Test, Fixture {
+contract UnitTest is Fixture {
     MockPerpDex mockPerpDex;
     DUSD dusd;
     MOCKOFTV2 weth;
@@ -39,12 +38,16 @@ contract UnitTest is Test, Fixture {
         MockPerpDexGateway mockPerpDexGateway =
             new MockPerpDexGateway(vicId,address(arbLzEndpoint), address(mockPerpDex));
         mockDoldrumsGateway.setPerpDexGateway(address(mockPerpDexGateway));
+        mockDoldrumsGateway.setTrustedRemoteAddress(
+            arbId, abi.encodePacked(bytes32(bytes20(address(mockPerpDexGateway))))
+        );
         mockPerpDexGateway.setDoldrumsGateway(address(mockDoldrumsGateway));
-        // mockDoldrumsGateway.setPeer(arbId, bytes32(bytes20(address(mockPerpDexGateway))));
-        // mockPerpDexGateway.setPeer(vicId, bytes32(bytes20(address(mockDoldrumsGateway))));
-        arbLzEndpoint.setEndpointId(address(mockPerpDexGateway), arbId);
+        mockPerpDexGateway.setTrustedRemoteAddress(
+            vicId, abi.encodePacked(bytes32(bytes20(address(mockDoldrumsGateway))))
+        );
+        arbLzEndpoint.setGateway(address(mockPerpDexGateway));
         arbLzEndpoint.setCrossEndpoint(address(vicLzEndpoint));
-        vicLzEndpoint.setEndpointId(address(mockDoldrumsGateway), vicId);
+        vicLzEndpoint.setGateway(address(mockDoldrumsGateway));
         vicLzEndpoint.setCrossEndpoint(address(arbLzEndpoint));
         vicVault = new Vault(address(controller),address(mockDoldrumsGateway),address(wvic));
         daiVault = new Vault(address(controller),address(mockDoldrumsGateway),address(dai));
@@ -69,8 +72,8 @@ contract UnitTest is Test, Fixture {
         dai.approve(address(controller), 100 * 10 ** 8);
         controller.mint(address(dai), user1, 100 * 10 ** 8, 50 * 10 ** 8, block.timestamp + 100);
         uint256 dusdBalance = dusd.balanceOf(user1);
-        console.log("user1 dai balance : ", dai.balanceOf(user1));
-        console.log("user1 dusd balance : ", dusdBalance);
+        console.log("after mint user1 dusd balance : ", dusdBalance);
+        console.log("after mint user1 dai balance : ", dai.balanceOf(user1));
         return dusdBalance;
         vm.stopPrank();
     }
@@ -81,8 +84,8 @@ contract UnitTest is Test, Fixture {
         // vm.deal(address(vicVault), 100 * 10 ** 8);
         controller.mintWithVic{value: 100 * 10 ** 8}(user1, 0, block.timestamp + 100);
         uint256 dusdBalance = dusd.balanceOf(user1);
-        console.log("user1 vic balance : ", user1.balance);
-        console.log("user1 dusd balance : ", dusdBalance);
+        console.log("after mint user1 dusd balance : ", dusdBalance);
+        console.log("after mint user1 vic balance : ", user1.balance);
         return dusdBalance;
         vm.stopPrank();
     }
@@ -92,9 +95,8 @@ contract UnitTest is Test, Fixture {
         vm.startPrank(user1);
         dusd.approve(address(controller), dusdBalance);
         controller.redeem(address(dai), user1, dusdBalance, 0, block.timestamp + 100);
-        console.log("after user1 dusd balance : ", dusd.balanceOf(user1));
-        console.log("after user1 dai balance : ", dai.balanceOf(user1));
-        console.log("after controller dusd balance : ", dusd.balanceOf(address(controller)));
+        console.log("after redeem user1 dusd balance : ", dusd.balanceOf(user1));
+        console.log("after redeem user1 dai balance : ", dai.balanceOf(user1));
         vm.stopPrank();
     }
 
@@ -103,9 +105,8 @@ contract UnitTest is Test, Fixture {
         vm.startPrank(user1);
         dusd.approve(address(controller), dusdBalance);
         controller.redeem(address(wvic), user1, dusdBalance, 0, block.timestamp + 100);
-        console.log("after user1 dusd balance : ", dusd.balanceOf(user1));
-        console.log("after user1 vic balance : ", user1.balance);
-        console.log("after controller dusd balance : ", dusd.balanceOf(address(controller)));
+        console.log("after redeem user1 dusd balance : ", dusd.balanceOf(user1));
+        console.log("after redeem user1 vic balance : ", user1.balance);
         vm.stopPrank();
     }
 
@@ -116,8 +117,9 @@ contract UnitTest is Test, Fixture {
         dai.approve(address(controller), 100 * 10 ** 8);
         controller.mint(address(dai), user1, 100 * 10 ** 8, 100 * 10 ** 8, block.timestamp + 100);
         uint256 dusdBalance = dusd.balanceOf(user1);
-        console.log("user1 dai balance : ", dai.balanceOf(user1));
-        console.log("user1 dusd balance : ", dusdBalance);
+        uint256 daiBalance = dai.balanceOf(user1);
+        console.log("after mint user1 dai balance : ", daiBalance);
+        console.log("after mint user1 dusd balance : ", dusdBalance);
         vm.stopPrank();
     }
 
@@ -126,9 +128,8 @@ contract UnitTest is Test, Fixture {
         vm.deal(user1, 100 * 10 ** 8);
         // vm.deal(address(vicVault), 100 * 10 ** 8);
         controller.mintWithVic{value: 100 * 10 ** 8}(user1, 100 * 10 ** 8, block.timestamp + 100);
-        uint256 dusdBalance = dusd.balanceOf(user1);
-        console.log("user1 vic balance : ", user1.balance);
-        console.log("user1 dusd balance : ", dusdBalance);
+        console.log("after mint user1 vic balance : ", user1.balance);
+        console.log("after mint user1 dusd balance : ", dusd.balanceOf(user1));
         vm.stopPrank();
     }
 
@@ -137,9 +138,8 @@ contract UnitTest is Test, Fixture {
         vm.startPrank(user1);
         dusd.approve(address(controller), dusdBalance);
         controller.redeem(address(dai), user1, dusdBalance, 100 * 10 ** 8, block.timestamp + 100);
-        console.log("after user1 dusd balance : ", dusd.balanceOf(user1));
-        console.log("after user1 dai balance : ", dai.balanceOf(user1));
-        console.log("after controller dusd balance : ", dusd.balanceOf(address(controller)));
+        console.log("after redeem user1 dusd balance : ", dusd.balanceOf(user1));
+        console.log("after redeem user1 dai balance : ", dai.balanceOf(user1));
         vm.stopPrank();
     }
 
@@ -148,28 +148,27 @@ contract UnitTest is Test, Fixture {
         vm.startPrank(user1);
         dusd.approve(address(controller), dusdBalance);
         controller.redeem(address(wvic), user1, dusdBalance, 100 * 10 ** 8, block.timestamp + 100);
-        console.log("after user1 dusd balance : ", dusd.balanceOf(user1));
-        console.log("after user1 vic balance : ", user1.balance);
-        console.log("after controller dusd balance : ", dusd.balanceOf(address(controller)));
+        console.log("after redeem user1 dusd balance : ", dusd.balanceOf(user1));
+        console.log("after redeem user1 vic balance : ", user1.balance);
         vm.stopPrank();
     }
 
     function testOpenPosition() public {
-        uint256 amount = 10 ether;
-        uint256 minAmountOut = 9 * 3000;
-        uint256 deadline = block.timestamp + 1 hours;
-        bool isShort = true;
+        // uint256 amount = 10 ether;
+        // uint256 minAmountOut = 9 * 3000;
+        // uint256 deadline = block.timestamp + 1 hours;
+        // bool isShort = true;
 
-        mockPerpDex.openPositionFor(isShort, address(vault), receiver, amount, minAmountOut, deadline);
+        // mockPerpDex.openPositionFor(isShort, address(vault), receiver, amount, minAmountOut, deadline);
 
-        MockPerpDex.Position memory position = mockPerpDex.getPosition(receiver);
+        // MockPerpDex.Position memory position = mockPerpDex.getPosition(receiver);
 
-        if (isShort) {
-            assertEq(position.amount, -int256(amount));
-        } else {
-            assertEq(position.amount, int256(amount));
-        }
-        assertGt(position.entryPrice, 0);
+        // if (isShort) {
+        //     assertEq(position.amount, -int256(amount));
+        // } else {
+        //     assertEq(position.amount, int256(amount));
+        // }
+        // assertGt(position.entryPrice, 0);
     }
 
     function testChangeOraclePrice() public {

@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "./DeployCross.s.sol";
 
-contract ChekcDUSD is DeployCross {
+contract CheckDUSD is DeployCross {
     function setUp() public virtual override {
         super.setUp();
     }
@@ -24,15 +24,15 @@ contract ChekcDUSD is DeployCross {
         // console.log("user2 balance: ", dusd.balanceOf(address(user2)));
         // vm.stopBroadcast();
 
-        // vm.startBroadcast(vm.envUint("PRIVATE_KEY1"));
-        // // address(dusd).call{value: 10 ether}("");
-        // dusd.sendFrom(owner, arbId, abi.encodePacked(bytes20(address(owner))), 10000);
-        // vm.stopBroadcast();
-
-        console.log("#### On Sub Chain ####");
-        vm.selectFork(rpcIndex[sub]);
         vm.startBroadcast(vm.envUint("PRIVATE_KEY1"));
-        // address(dusd2).call{value: 0.1 ether}("");
-        dusd2.sendFrom(owner, vicId, abi.encodePacked(bytes20(address(owner))), 5000);
+        // address(dusd).call{value: 10 ether}("");
+        dusd.sendFrom(owner, arbId, abi.encodePacked(bytes20(address(owner))), 10000);
+        vm.stopBroadcast();
+
+        // console.log("#### On Sub Chain ####");
+        // vm.selectFork(rpcIndex[sub]);
+        // vm.startBroadcast(vm.envUint("PRIVATE_KEY1"));
+        // // address(dusd2).call{value: 0.01 ether}("");
+        // dusd2.sendFrom(owner, vicId, abi.encodePacked(bytes20(address(owner))), 5000);
     }
 }
